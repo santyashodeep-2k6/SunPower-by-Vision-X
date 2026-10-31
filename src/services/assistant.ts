@@ -1012,12 +1012,17 @@ What is your average monthly electricity bill or city?`
 const backend: AssistantService = {
   engine: "backend",
   greet: smartAI.greet,
-  reply: (conversation, slot, text) =>
-    apiRequest<AssistantTurn>("POST", "/assistant/reply", {
-      conversationId: conversation.id,
-      slot,
-      text,
-    }),
+  reply: async (conversation, slot, text) => {
+    try {
+      return await apiRequest<AssistantTurn>("POST", "/assistant/reply", {
+        conversationId: conversation.id,
+        slot,
+        text,
+      })
+    } catch {
+      return smartAI.reply(conversation, slot, text)
+    }
+  },
 }
 
 export const assistantService: AssistantService = isDemoMode

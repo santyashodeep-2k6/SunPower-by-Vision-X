@@ -605,8 +605,8 @@ export const effectiveQuoteStatus = (q: Quotation): Quotation["status"] =>
     ? "Expired"
     : q.status
 
-export function createQuotation(surveyId: string, packageId?: string) {
-  return command(
+export async function createQuotation(surveyId: string, packageId?: string) {
+  const res = await command(
     { method: "POST", path: "/quotations", body: { surveyId, packageId } },
     (db) => {
       const s = byId(db.surveys, surveyId) ?? notFound("Survey")
@@ -664,6 +664,7 @@ export function createQuotation(surveyId: string, packageId?: string) {
       return id
     },
   )
+  return typeof res === "string" ? res : (res as any)?.id || (res as any)?.quoteNumber || String(res)
 }
 
 export function updateQuotationDraft(

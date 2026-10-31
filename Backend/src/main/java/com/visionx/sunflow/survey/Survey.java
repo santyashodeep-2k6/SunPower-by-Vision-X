@@ -120,7 +120,8 @@ public class Survey {
             return new ArrayList<>();
         }
         try {
-            return MAPPER.readValue(photos, new TypeReference<List<Map<String, Object>>>() {});
+            return MAPPER.readValue(photos, new TypeReference<List<Map<String, Object>>>() {
+            });
         } catch (Exception e) {
             return new ArrayList<>();
         }
@@ -151,7 +152,8 @@ public class Survey {
             return new ArrayList<>();
         }
         try {
-            return MAPPER.readValue(notes, new TypeReference<List<Map<String, Object>>>() {});
+            return MAPPER.readValue(notes, new TypeReference<List<Map<String, Object>>>() {
+            });
         } catch (Exception e) {
             return new ArrayList<>();
         }
@@ -170,6 +172,7 @@ public class Survey {
         list.add(0, note);
         setNotesList(list);
     }
+
 
     // Getters and Setters
 

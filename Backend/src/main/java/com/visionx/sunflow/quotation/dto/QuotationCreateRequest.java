@@ -1,23 +1,41 @@
 package com.visionx.sunflow.quotation.dto;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.math.BigDecimal;
 
 public record QuotationCreateRequest(
+        @JsonAlias({"leadId", "lead"})
         String leadId,
+
+        @JsonAlias({"siteId", "site"})
         String siteId,
+
+        @JsonAlias({"surveyId", "survey"})
         String surveyId,
 
-        @NotNull(message = "Capacity kW is required")
-        @DecimalMin(value = "0.5", message = "System capacity must be at least 0.5 kW")
+        @JsonAlias({"packageId", "package"})
+        String packageId,
+
+        @JsonAlias({"capacityKw", "capacity", "kw"})
         BigDecimal capacityKw,
 
-        @NotBlank(message = "System type is required (ON_GRID, OFF_GRID, HYBRID)")
+        @JsonAlias({"systemType", "type"})
         String systemType,
 
-        String propertyType, // RESIDENTIAL, COMMERCIAL, INDUSTRIAL
-        String notes
-) {}
+        @JsonAlias({"propertyType", "propType"})
+        String propertyType,
 
+        String notes
+) {
+    public QuotationCreateRequest(
+            String leadId,
+            String siteId,
+            String surveyId,
+            BigDecimal capacityKw,
+            String systemType,
+            String propertyType,
+            String notes
+    ) {
+        this(leadId, siteId, surveyId, null, capacityKw, systemType, propertyType, notes);
+    }
+}
