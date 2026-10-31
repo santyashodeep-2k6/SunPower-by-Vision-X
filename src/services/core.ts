@@ -193,9 +193,9 @@ export function normalizeDb(data: DemoDB): DemoDB {
     if (s.customerId && !customerMap.has(s.customerId)) {
       customerMap.set(s.customerId, {
         id: s.customerId,
-        name: s.customerName || 'Customer',
-        phone: s.customerPhone || '',
-        email: s.customerEmail || undefined,
+        name: (s as any).customerName || 'Customer',
+        phone: (s as any).customerPhone || '',
+        email: (s as any).customerEmail || undefined,
         language: 'English',
         contactMethod: 'Phone' as const,
         createdAt: s.createdAt || new Date().toISOString(),
@@ -206,7 +206,7 @@ export function normalizeDb(data: DemoDB): DemoDB {
         id: s.siteId,
         customerId: s.customerId,
         propertyType: 'Residential',
-        address: s.siteAddress || 'Site address',
+        address: (s as any).siteAddress || 'Site address',
         city: 'Pune',
         state: 'Maharashtra',
         pin: '411033',
