@@ -189,6 +189,33 @@ export function normalizeDb(data: DemoDB): DemoDB {
     notes: Array.isArray(s.notes) ? s.notes : [],
   }))
 
+  for (const s of next.surveys) {
+    if (s.customerId && !customerMap.has(s.customerId)) {
+      customerMap.set(s.customerId, {
+        id: s.customerId,
+        name: s.customerName || 'Customer',
+        phone: s.customerPhone || '',
+        email: s.customerEmail || undefined,
+        language: 'English',
+        contactMethod: 'Phone' as const,
+        createdAt: s.createdAt || new Date().toISOString(),
+      })
+    }
+    if (s.siteId && !siteMap.has(s.siteId)) {
+      siteMap.set(s.siteId, {
+        id: s.siteId,
+        customerId: s.customerId,
+        propertyType: 'Residential',
+        address: s.siteAddress || 'Site address',
+        city: 'Pune',
+        state: 'Maharashtra',
+        pin: '411033',
+      })
+    }
+  }
+  next.customers = Array.from(customerMap.values())
+  next.sites = Array.from(siteMap.values())
+
   // Normalize installations
   next.installations = (next.installations || []).map((i: any) => ({
     ...i,

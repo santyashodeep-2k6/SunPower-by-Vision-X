@@ -91,10 +91,26 @@ export default function SurveyDetailPage() {
         }
       />
     )
-  const c = db.customers.find((x) => x.id === survey.customerId)!
-  const site = db.sites.find((x) => x.id === survey.siteId)!
+  const c = db.customers.find((x) => x.id === survey.customerId) ?? {
+    id: survey.customerId || 'CUS-DEFAULT',
+    name: (survey as any).customerName || 'Customer',
+    phone: (survey as any).customerPhone || '',
+    email: (survey as any).customerEmail,
+    language: 'English',
+    contactMethod: 'Phone' as const,
+    createdAt: (survey as any).createdAt || new Date().toISOString(),
+  }
+  const site = db.sites.find((x) => x.id === survey.siteId) ?? {
+    id: survey.siteId || 'SITE-DEFAULT',
+    customerId: c.id,
+    propertyType: 'Residential' as const,
+    address: (survey as any).siteAddress || 'Site address',
+    city: 'Pune',
+    state: 'Maharashtra',
+    pin: '411033',
+  }
   const lead = db.leads.find((l) => l.id === survey.leadId)
-  const quotes = db.quotations.filter((q) => q.surveyId === survey.id)
+  const quotes = (db.quotations || []).filter((q) => q.surveyId === survey.id)
   const editable = ["Scheduled", "Revisit Requested"].includes(survey.status)
   const canDecide = session?.role === "admin" || session?.role === "sales"
 
@@ -403,7 +419,7 @@ export default function SurveyDetailPage() {
             description="At least one photograph is required before submission."
           >
             <FileUploader
-              photos={survey.photos}
+              photos={survey.photos ?? []}
               disabled={!editable}
               onAdd={(p) =>
                 run("photo", () => addSurveyPhoto(survey.id, p), "Photo added")

@@ -20,7 +20,7 @@ public enum SurveyStatus {
             case COMPLETED -> "Pending Approval";
             case APPROVED -> "Approved";
             case REJECTED, CANCELLED -> "Rejected";
-            case RESCHEDULED -> "Scheduled";
+            case RESCHEDULED -> "Revisit Requested";
         };
     }
 
@@ -35,6 +35,7 @@ public enum SurveyStatus {
         if (clean.contains("PROG")) return IN_PROGRESS;
         if (clean.contains("APPROV")) return APPROVED;
         if (clean.contains("REJECT") || clean.contains("CANCEL")) return REJECTED;
+        if (clean.contains("REVISIT") || clean.contains("RESCHED")) return RESCHEDULED;
         return SCHEDULED;
     }
 }

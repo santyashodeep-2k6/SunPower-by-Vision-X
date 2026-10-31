@@ -1,5 +1,7 @@
 package com.visionx.sunflow.survey;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.visionx.sunflow.lead.Lead;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,11 +19,17 @@ import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
 @Table(name = "surveys")
 public class Survey {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -81,6 +89,12 @@ public class Survey {
     @Column(name = "scheduling_notes", columnDefinition = "TEXT")
     private String schedulingNotes;
 
+    @Column(name = "photos", columnDefinition = "TEXT")
+    private String photos;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -97,6 +111,64 @@ public class Survey {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = Instant.now();
+    }
+
+    // Helper methods for JSON photos & notes
+
+    public List<Map<String, Object>> getPhotosList() {
+        if (photos == null || photos.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            return MAPPER.readValue(photos, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public void setPhotosList(List<Map<String, Object>> list) {
+        try {
+            this.photos = MAPPER.writeValueAsString(list != null ? list : Collections.emptyList());
+        } catch (Exception e) {
+            this.photos = "[]";
+        }
+    }
+
+    public void addPhoto(Map<String, Object> photo) {
+        List<Map<String, Object>> list = getPhotosList();
+        list.add(photo);
+        setPhotosList(list);
+    }
+
+    public void removePhoto(String photoId) {
+        List<Map<String, Object>> list = getPhotosList();
+        list.removeIf(p -> photoId.equals(String.valueOf(p.get("id"))));
+        setPhotosList(list);
+    }
+
+    public List<Map<String, Object>> getNotesList() {
+        if (notes == null || notes.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            return MAPPER.readValue(notes, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public void setNotesList(List<Map<String, Object>> list) {
+        try {
+            this.notes = MAPPER.writeValueAsString(list != null ? list : Collections.emptyList());
+        } catch (Exception e) {
+            this.notes = "[]";
+        }
+    }
+
+    public void addNote(Map<String, Object> note) {
+        List<Map<String, Object>> list = getNotesList();
+        list.add(0, note);
+        setNotesList(list);
     }
 
     // Getters and Setters
@@ -235,6 +307,22 @@ public class Survey {
 
     public void setSchedulingNotes(String schedulingNotes) {
         this.schedulingNotes = schedulingNotes;
+    }
+
+    public String getPhotos() {
+        return photos;
+    }
+
+    public void setPhotos(String photos) {
+        this.photos = photos;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 
     public Instant getCreatedAt() {

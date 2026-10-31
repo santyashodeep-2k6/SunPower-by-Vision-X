@@ -525,7 +525,7 @@ export async function fileToPhoto(
 }
 
 export function FileUploader({
-  photos,
+  photos = [],
   onAdd,
   onRemove,
   disabled,
@@ -535,7 +535,7 @@ export function FileUploader({
   onError,
   /** Demo helper: sample image URLs when no camera/files are at hand. */
 }: {
-  photos: Photo[]
+  photos?: Photo[]
   onAdd: (p: Photo) => Promise<unknown> | void
   onRemove?: (id: string) => Promise<unknown> | void
   disabled?: boolean
@@ -547,6 +547,7 @@ export function FileUploader({
   const input = useRef<HTMLInputElement>(null)
   const [drag, setDrag] = useState(false)
   const [busy, setBusy] = useState(false)
+  const photoList = Array.isArray(photos) ? photos : []
   const handle = async (files: FileList | null) => {
     if (!files?.length) return
     setBusy(true)
@@ -561,7 +562,7 @@ export function FileUploader({
     if (input.current) input.current.value = ""
   }
   const nextSample = samplePhotos?.find(
-    (s) => !photos.some((p) => p.url === s.url),
+    (s) => !photoList.some((p) => p.url === s.url),
   )
   return (
     <div>
@@ -628,9 +629,9 @@ export function FileUploader({
           )}
         </div>
       )}
-      {photos.length > 0 && (
+      {photoList.length > 0 && (
         <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {photos.map((p) => (
+          {photoList.map((p) => (
             <li
               key={p.id}
               className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-forest/5"

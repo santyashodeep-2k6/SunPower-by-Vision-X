@@ -31,14 +31,14 @@ public class SurveyController {
         this.surveyService = surveyService;
     }
 
-    @PostMapping("/surveys")
+    @PostMapping({"/surveys", "/v1/surveys"})
     @Operation(summary = "Schedule a new site survey for a customer lead")
     public ResponseEntity<SurveyResponse> createSurvey(@Valid @RequestBody SurveyCreateRequest request) {
         SurveyResponse response = surveyService.createSurvey(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/surveys")
+    @GetMapping({"/surveys", "/v1/surveys"})
     @Operation(summary = "List surveys with optional status, surveyor, and lead filters")
     public ResponseEntity<Page<SurveyResponse>> getSurveys(
             @RequestParam(required = false) SurveyStatus status,
@@ -50,14 +50,14 @@ public class SurveyController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/surveys/{id}")
+    @GetMapping({"/surveys/{id}", "/v1/surveys/{id}"})
     @Operation(summary = "Get survey details by ID")
     public ResponseEntity<SurveyResponse> getSurveyById(@PathVariable UUID id) {
         SurveyResponse response = surveyService.getSurveyById(id);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/surveys/{id}/assessment")
+    @PutMapping({"/surveys/{id}/assessment", "/v1/surveys/{id}/assessment"})
     @Operation(summary = "Update technical survey assessment findings")
     public ResponseEntity<SurveyResponse> updateAssessment(
             @PathVariable UUID id,
@@ -67,7 +67,7 @@ public class SurveyController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/surveys/{id}/status")
+    @PatchMapping({"/surveys/{id}/status", "/v1/surveys/{id}/status"})
     @Operation(summary = "Update survey status with state transition validation")
     public ResponseEntity<SurveyResponse> updateStatus(
             @PathVariable UUID id,
@@ -75,6 +75,59 @@ public class SurveyController {
     ) {
         SurveyResponse response = surveyService.updateStatus(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping({"/surveys/{id}/photos", "/v1/surveys/{id}/photos"})
+    @Operation(summary = "Upload survey photo")
+    public ResponseEntity<SurveyResponse> addPhoto(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> photo
+    ) {
+        return ResponseEntity.ok(surveyService.addPhoto(id, photo));
+    }
+
+    @DeleteMapping({"/surveys/{id}/photos/{photoId}", "/v1/surveys/{id}/photos/{photoId}"})
+    @Operation(summary = "Delete survey photo")
+    public ResponseEntity<SurveyResponse> removePhoto(
+            @PathVariable UUID id,
+            @PathVariable String photoId
+    ) {
+        return ResponseEntity.ok(surveyService.removePhoto(id, photoId));
+    }
+
+    @PostMapping({"/surveys/{id}/notes", "/v1/surveys/{id}/notes"})
+    @Operation(summary = "Add survey technician note")
+    public ResponseEntity<SurveyResponse> addNote(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body
+    ) {
+        String text = body != null ? (body.containsKey("text") ? body.get("text") : body.get("note")) : "";
+        return ResponseEntity.ok(surveyService.addNote(id, text));
+    }
+
+    @PostMapping({"/surveys/{id}/assign", "/v1/surveys/{id}/assign"})
+    @Operation(summary = "Assign surveyor to survey")
+    public ResponseEntity<SurveyResponse> assignSurveyor(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body
+    ) {
+        String surveyorId = body != null ? (body.containsKey("surveyorId") ? body.get("surveyorId") : body.get("surveyorName")) : "";
+        return ResponseEntity.ok(surveyService.assignSurveyor(id, surveyorId));
+    }
+
+    @PostMapping({"/surveys/{id}/reschedule", "/v1/surveys/{id}/reschedule"})
+    @Operation(summary = "Reschedule survey to a new date and time")
+    public ResponseEntity<SurveyResponse> rescheduleSurvey(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body
+    ) {
+        Instant scheduledAt = Instant.now().plus(java.time.Duration.ofDays(2));
+        if (body != null && body.containsKey("scheduledAt") && body.get("scheduledAt") != null) {
+            try {
+                scheduledAt = Instant.parse(body.get("scheduledAt"));
+            } catch (Exception ignored) {}
+        }
+        return ResponseEntity.ok(surveyService.rescheduleSurvey(id, scheduledAt));
     }
 
     @PostMapping({"/surveys/{id}/approve", "/v1/surveys/{id}/approve"})
@@ -89,20 +142,26 @@ public class SurveyController {
         return ResponseEntity.ok(surveyService.updateStatus(id, new SurveyStatusUpdateRequest(SurveyStatus.REJECTED)));
     }
 
+    @PostMapping({"/surveys/{id}/revisit", "/v1/surveys/{id}/revisit"})
+    @Operation(summary = "Request revisit for survey")
+    public ResponseEntity<SurveyResponse> revisitSurvey(@PathVariable UUID id, @RequestBody(required = false) Map<String, String> body) {
+        return ResponseEntity.ok(surveyService.updateStatus(id, new SurveyStatusUpdateRequest(SurveyStatus.RESCHEDULED)));
+    }
+
     @PostMapping({"/surveys/{id}/submit", "/v1/surveys/{id}/submit"})
     @Operation(summary = "Submit survey for technical review")
     public ResponseEntity<SurveyResponse> submitSurvey(@PathVariable UUID id) {
         return ResponseEntity.ok(surveyService.updateStatus(id, new SurveyStatusUpdateRequest(SurveyStatus.COMPLETED)));
     }
 
-    @GetMapping("/leads/{leadId}/surveys")
+    @GetMapping({"/leads/{leadId}/surveys", "/v1/leads/{leadId}/surveys"})
     @Operation(summary = "Get all surveys associated with a specific lead")
     public ResponseEntity<List<SurveyResponse>> getSurveysByLead(@PathVariable UUID leadId) {
         List<SurveyResponse> response = surveyService.getSurveysByLeadId(leadId);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/leads/{leadId}/surveys")
+    @PostMapping({"/leads/{leadId}/surveys", "/v1/leads/{leadId}/surveys"})
     @Operation(summary = "Schedule a site survey for a specific lead")
     public ResponseEntity<SurveyResponse> scheduleSurveyForLead(
             @PathVariable UUID leadId,

@@ -889,7 +889,8 @@ export function ScheduleSurveyModal({
                 (sid) => `Survey ${sid} scheduled`,
               )
                 .then((sid) => {
-                  const idStr = typeof sid === "string" ? sid : (sid as any)?.id || ""
+                  const idStr =
+                    typeof sid === "string" ? sid : (sid as any)?.id || ""
                   onClose()
                   if (idStr) navigate(`/app/surveys/${idStr}`)
                 })

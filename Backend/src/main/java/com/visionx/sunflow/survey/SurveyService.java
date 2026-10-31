@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -107,39 +109,53 @@ public class SurveyService {
 
         if (request.roofType() != null) {
             survey.setRoofType(request.roofType());
+        } else if (survey.getRoofType() == null) {
+            survey.setRoofType(RoofType.RCC_FLAT);
         }
+
         if (request.usableRoofAreaSqft() != null) {
             survey.setUsableRoofAreaSqft(request.usableRoofAreaSqft());
         }
+
         if (request.shadingCondition() != null) {
             survey.setShadingCondition(request.shadingCondition());
+        } else if (survey.getShadingCondition() == null) {
+            survey.setShadingCondition(ShadingCondition.NO_SHADING);
         }
+
         if (request.electricalConnection() != null) {
             survey.setElectricalConnection(request.electricalConnection());
+        } else if (survey.getElectricalConnection() == null) {
+            survey.setElectricalConnection(ElectricalConnection.SINGLE_PHASE);
         }
+
         if (request.sanctionedLoadKw() != null) {
             survey.setSanctionedLoadKw(request.sanctionedLoadKw());
         }
+
         if (request.recommendedCapacityKw() != null) {
             survey.setRecommendedCapacityKw(request.recommendedCapacityKw());
         }
+
         if (request.feasibility() != null) {
             survey.setFeasibility(request.feasibility());
+        } else if (survey.getFeasibility() == null) {
+            survey.setFeasibility(SurveyFeasibility.FEASIBLE);
         }
+
         if (request.assessmentNotes() != null) {
             survey.setAssessmentNotes(request.assessmentNotes());
         }
 
-        // If completeSurvey is requested, perform validation and state transition
+        // If completeSurvey is requested, perform state transition
         if (Boolean.TRUE.equals(request.completeSurvey())) {
-            if (survey.getRoofType() == null || survey.getRecommendedCapacityKw() == null || survey.getFeasibility() == null) {
-                throw new IllegalArgumentException(
-                        "Cannot complete survey without roofType, recommendedCapacityKw, and feasibility."
-                );
-            }
             validateStatusTransition(survey.getStatus(), SurveyStatus.COMPLETED);
             survey.setStatus(SurveyStatus.COMPLETED);
             survey.setCompletedAt(Instant.now());
+            if (survey.getLead() != null) {
+                survey.getLead().setStatus(LeadStatus.SURVEY_COMPLETED);
+                leadRepository.save(survey.getLead());
+            }
         }
 
         Survey updated = surveyRepository.save(survey);
@@ -157,19 +173,87 @@ public class SurveyService {
         survey.setStatus(targetStatus);
         if (targetStatus == SurveyStatus.COMPLETED) {
             survey.setCompletedAt(Instant.now());
+            if (survey.getLead() != null) {
+                survey.getLead().setStatus(LeadStatus.SURVEY_COMPLETED);
+                leadRepository.save(survey.getLead());
+            }
+        } else if (targetStatus == SurveyStatus.APPROVED) {
+            if (survey.getLead() != null) {
+                survey.getLead().setStatus(LeadStatus.SURVEY_COMPLETED);
+                leadRepository.save(survey.getLead());
+            }
         }
 
         Survey updated = surveyRepository.save(survey);
         return SurveyResponse.from(updated);
     }
 
+    @Transactional
+    public SurveyResponse addPhoto(UUID id, Map<String, Object> photo) {
+        Survey survey = surveyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Survey", id));
+        Map<String, Object> item = new HashMap<>(photo);
+        if (!item.containsKey("id") || item.get("id") == null) {
+            item.put("id", "p-" + UUID.randomUUID());
+        }
+        if (!item.containsKey("at") || item.get("at") == null) {
+            item.put("at", Instant.now().toString());
+        }
+        survey.addPhoto(item);
+        Survey updated = surveyRepository.save(survey);
+        return SurveyResponse.from(updated);
+    }
+
+    @Transactional
+    public SurveyResponse removePhoto(UUID id, String photoId) {
+        Survey survey = surveyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Survey", id));
+        survey.removePhoto(photoId);
+        Survey updated = surveyRepository.save(survey);
+        return SurveyResponse.from(updated);
+    }
+
+    @Transactional
+    public SurveyResponse addNote(UUID id, String noteText) {
+        Survey survey = surveyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Survey", id));
+        Map<String, Object> note = Map.of(
+                "id", "srv-note-" + UUID.randomUUID(),
+                "text", noteText != null ? noteText : "",
+                "author", "Staff",
+                "authorName", "Staff",
+                "at", Instant.now().toString()
+        );
+        survey.addNote(note);
+        Survey updated = surveyRepository.save(survey);
+        return SurveyResponse.from(updated);
+    }
+
+    @Transactional
+    public SurveyResponse assignSurveyor(UUID id, String surveyorId) {
+        Survey survey = surveyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Survey", id));
+        if (surveyorId != null && !surveyorId.isBlank()) {
+            survey.setSurveyorName(surveyorId);
+        }
+        Survey updated = surveyRepository.save(survey);
+        return SurveyResponse.from(updated);
+    }
+
+    @Transactional
+    public SurveyResponse rescheduleSurvey(UUID id, Instant scheduledAt) {
+        Survey survey = surveyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Survey", id));
+        if (scheduledAt != null) {
+            survey.setScheduledAt(scheduledAt);
+        }
+        survey.setStatus(SurveyStatus.SCHEDULED);
+        Survey updated = surveyRepository.save(survey);
+        return SurveyResponse.from(updated);
+    }
+
     /**
-     * Validates permitted status transitions:
-     * - SCHEDULED -> IN_PROGRESS, CANCELLED, RESCHEDULED
-     * - IN_PROGRESS -> COMPLETED, CANCELLED, RESCHEDULED
-     * - RESCHEDULED -> SCHEDULED, CANCELLED
-     * - COMPLETED -> APPROVED, REJECTED
-     * - APPROVED, REJECTED, CANCELLED are terminal states
+     * Permissive status transitions for agile CRM / hackathon workflow
      */
     private void validateStatusTransition(SurveyStatus current, SurveyStatus next) {
         if (current == next) {
@@ -177,11 +261,11 @@ public class SurveyService {
         }
 
         boolean valid = switch (current) {
-            case SCHEDULED -> Set.of(SurveyStatus.IN_PROGRESS, SurveyStatus.CANCELLED, SurveyStatus.RESCHEDULED).contains(next);
+            case SCHEDULED -> Set.of(SurveyStatus.IN_PROGRESS, SurveyStatus.COMPLETED, SurveyStatus.CANCELLED, SurveyStatus.RESCHEDULED).contains(next);
             case IN_PROGRESS -> Set.of(SurveyStatus.COMPLETED, SurveyStatus.CANCELLED, SurveyStatus.RESCHEDULED).contains(next);
-            case RESCHEDULED -> Set.of(SurveyStatus.SCHEDULED, SurveyStatus.CANCELLED).contains(next);
-            case COMPLETED -> Set.of(SurveyStatus.APPROVED, SurveyStatus.REJECTED).contains(next);
-            case APPROVED, REJECTED, CANCELLED -> false;
+            case RESCHEDULED -> Set.of(SurveyStatus.SCHEDULED, SurveyStatus.COMPLETED, SurveyStatus.CANCELLED).contains(next);
+            case COMPLETED -> Set.of(SurveyStatus.APPROVED, SurveyStatus.REJECTED, SurveyStatus.RESCHEDULED).contains(next);
+            case APPROVED, REJECTED, CANCELLED -> Set.of(SurveyStatus.SCHEDULED, SurveyStatus.RESCHEDULED, SurveyStatus.APPROVED, SurveyStatus.REJECTED).contains(next);
         };
 
         if (!valid) {
