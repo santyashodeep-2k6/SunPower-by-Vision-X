@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/data"
 import { DemoBadge } from "@/components/ui/feedback"
 import { JourneyGuide } from "@/components/special/JourneyGuide"
+import { AIAssistantInsightsCard } from "@/components/special/AIAssistantInsightsCard"
 import { LEAD_STATUSES, LeadsTable } from "./LeadsTable"
 
 export const CHART_COLORS = [
@@ -140,6 +141,10 @@ export default function DashboardPage() {
             sub={`${k.won} won · ${k.lost} lost`}
           />
         </div>
+
+        {/* AI Prospect Intelligence & Live Chat Insights Feed */}
+        <AIAssistantInsightsCard db={db} />
+
         <div className="grid gap-6 xl:grid-cols-3">
           <ChartCard
             title="Pipeline by status"

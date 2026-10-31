@@ -190,6 +190,35 @@ for (const inst of db.installations.filter((i) => i.status === "Completed")) {
 }
 assert(instWarrantiesValid, `Every completed installation has registered hardware warranties`)
 
+// -------------------------------------------------------------
+// MODULE 7: AI Prospect Intelligence & Sales Dashboard Feed
+// -------------------------------------------------------------
+console.log("\n--- Module 7: AI Prospect Intelligence Feed to Sales Dashboard ---")
+// Check conversations and AI leads are captured with user details and specs
+const aiLeads = db.leads.filter((l) => l.source === "AI Assistant")
+assert(aiLeads.length > 0, `Captured ${aiLeads.length} leads originating from AI Assistant`)
+
+const convos = db.conversations
+assert(convos.length > 0, `Loaded ${convos.length} live visitor conversations`)
+
+// Check spec extraction: monthly bill, capacity, phone, city
+const testConv = convos[0]
+assert(Boolean(testConv.collected), `Conversation ${testConv.id} contains collected user specifications`)
+
+// Verify estimate calculation from collected specs
+const estFromConv = calculateSolarEstimate({
+  monthlyBill: testConv.collected.monthlyBill || 3500,
+  preferredCapacity: testConv.collected.capacity,
+  systemType: testConv.collected.systemType || "On-Grid",
+  roofArea: testConv.collected.roofArea,
+})
+assert(estFromConv.capacityKw > 0, `Derived solar sizing ${estFromConv.capacityKw} kW for prospect`)
+assert(estFromConv.subsidy > 0, `Derived PM Surya Ghar subsidy ${inr(estFromConv.subsidy)} for prospect`)
+
+// Verify intent scoring
+const hasAdvisorRequest = convos.some((c) => c.status === "Needs Human")
+assert(hasAdvisorRequest, `Successfully flags visitor conversations requesting advisor intervention`)
+
 console.log("\n=======================================================")
 console.log(`FULL INTEGRATION RUN: ${passCount} PASSED, ${failCount} FAILED`)
 console.log("=======================================================")
