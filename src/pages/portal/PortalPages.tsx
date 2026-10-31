@@ -391,7 +391,7 @@ export function PortalInstallations() {
                 <StatusBadge status={i.status} className="mt-4" />
               </Panel>
               <Panel title="Photographs">
-                {i.photos.length ? (
+                {i.photos?.length ? (
                   <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {i.photos.map((p) => (
                       <li key={p.id}>

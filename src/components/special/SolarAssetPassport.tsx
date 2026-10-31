@@ -355,11 +355,11 @@ export function SolarAssetPassport({
         title="Installation photographs"
         actions={
           <span className="inline-flex items-center gap-1 text-[12px] text-muted">
-            <ImageIcon className="h-3.5 w-3.5" /> {inst.photos.length}
+            <ImageIcon className="h-3.5 w-3.5" /> {inst.photos?.length ?? 0}
           </span>
         }
       >
-        {inst.photos.length === 0 ? (
+        {(inst.photos?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted">
             Photographs are added by the technician during installation.
           </p>

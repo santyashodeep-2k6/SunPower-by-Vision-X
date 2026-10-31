@@ -379,7 +379,7 @@ export default function TicketDetailPage() {
               ]}
             />
           </Panel>
-          {t.photos.length > 0 && (
+          {(t.photos?.length ?? 0) > 0 && (
             <Panel title="Photographs">
               <ul className="grid grid-cols-3 gap-2">
                 {t.photos.map((p) => (

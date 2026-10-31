@@ -312,20 +312,20 @@ export default function InstallationDetailPage() {
                   },
                   {
                     label: "Serials verified",
-                    value: `${inst.verifiedSerials.length}`,
+                    value: `${inst.verifiedSerials?.length ?? 0}`,
                   },
                 ]}
               />
             </div>
           </Panel>
           <Panel title="Photographs">
-            {inst.photos.length === 0 ? (
+            {(inst.photos?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted">
                 No photographs yet — uploaded from the technician workspace.
               </p>
             ) : (
               <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {inst.photos.map((p) => (
+                {inst.photos?.map((p) => (
                   <li key={p.id}>
                     <img
                       src={p.url}
@@ -339,13 +339,13 @@ export default function InstallationDetailPage() {
           </Panel>
           <div className="grid gap-5 md:grid-cols-2">
             <Panel title="Timesheets">
-              {inst.timesheets.length === 0 ? (
+              {(inst.timesheets?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted">
                   Recorded when the job starts.
                 </p>
               ) : (
                 <ul className="space-y-1.5 text-[13px]">
-                  {inst.timesheets.map((t) => (
+                  {inst.timesheets?.map((t) => (
                     <li key={t.id} className="flex justify-between gap-2">
                       <span>
                         {db.users.find((u) => u.id === t.technicianId)?.name}

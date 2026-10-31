@@ -80,6 +80,118 @@ export const COLLECTION_ENDPOINTS: Partial<Record<keyof DemoDB, string>> = {
   notifications: "/notifications",
 }
 
+export function normalizeDb(data: DemoDB): DemoDB {
+  const next = { ...data }
+
+  // Ensure array collections are always initialized as arrays
+  for (const k of Object.keys(COLLECTION_ENDPOINTS) as (keyof DemoDB)[]) {
+    if (!Array.isArray(next[k])) {
+      ;(next as any)[k] = []
+    }
+  }
+
+  // Normalize leads
+  next.leads = (next.leads || []).map((l: any) => {
+    const leadId = String(l.id || l.leadId)
+    const customerId = String(l.customerId || leadId)
+    const siteId = String(l.siteId || `SITE-${leadId}`)
+    return {
+      ...l,
+      id: leadId,
+      customerId,
+      siteId,
+      name: l.name || l.fullName || "Customer",
+      source: l.source || l.channel || "Website",
+      status: l.status || "New",
+      monthlyBill: l.monthlyBill != null ? Number(l.monthlyBill) : undefined,
+      roofArea:
+        l.roofArea != null
+          ? Number(l.roofArea)
+          : l.roofAreaSqft != null
+            ? Number(l.roofAreaSqft)
+            : undefined,
+      preferredCapacity:
+        l.preferredCapacity != null
+          ? Number(l.preferredCapacity)
+          : l.requestedCapacityKw != null
+            ? Number(l.requestedCapacityKw)
+            : undefined,
+      notes: Array.isArray(l.notes)
+        ? l.notes
+        : l.qualificationNotes
+          ? [
+              {
+                id: "note-1",
+                text: l.qualificationNotes,
+                author: "System / AI",
+                at: l.createdAt || new Date().toISOString(),
+              },
+            ]
+          : [],
+    }
+  })
+
+  // Ensure every lead has a matching customer
+  const customerMap = new Map((next.customers || []).map((c: any) => [c.id, c]))
+  for (const l of next.leads) {
+    if (!customerMap.has(l.customerId)) {
+      const newCust = {
+        id: l.customerId,
+        name: (l as any).fullName || (l as any).name || "Customer",
+        phone: (l as any).phone || "",
+        email: (l as any).email || undefined,
+        language: (l as any).preferredLanguage || "English",
+        contactMethod: "Phone" as const,
+        createdAt: l.createdAt || new Date().toISOString(),
+      }
+      customerMap.set(l.customerId, newCust)
+    }
+  }
+  next.customers = Array.from(customerMap.values())
+
+  // Ensure every lead has a matching site
+  const siteMap = new Map((next.sites || []).map((s: any) => [s.id, s]))
+  for (const l of next.leads) {
+    if (!siteMap.has(l.siteId)) {
+      const newSite = {
+        id: l.siteId,
+        customerId: l.customerId,
+        propertyType: (l as any).propertyType || "Residential",
+        address: (l as any).address || "Site address",
+        city: (l as any).city || "Pune",
+        state: "Maharashtra",
+        pin: (l as any).pin || "411033",
+      }
+      siteMap.set(l.siteId, newSite)
+    }
+  }
+  next.sites = Array.from(siteMap.values())
+
+  // Normalize surveys
+  next.surveys = (next.surveys || []).map((s: any) => ({
+    ...s,
+    photos: Array.isArray(s.photos) ? s.photos : [],
+    notes: Array.isArray(s.notes) ? s.notes : [],
+  }))
+
+  // Normalize installations
+  next.installations = (next.installations || []).map((i: any) => ({
+    ...i,
+    photos: Array.isArray(i.photos) ? i.photos : [],
+    timesheets: Array.isArray(i.timesheets) ? i.timesheets : [],
+    crew: Array.isArray(i.crew) ? i.crew : [],
+    verifiedSerials: Array.isArray(i.verifiedSerials) ? i.verifiedSerials : [],
+  }))
+
+  // Normalize serviceTickets
+  next.serviceTickets = (next.serviceTickets || []).map((t: any) => ({
+    ...t,
+    photos: Array.isArray(t.photos) ? t.photos : [],
+  }))
+
+  return next
+}
+
 export async function hydrate() {
   if (isDemoMode) return
   const entries = await Promise.all(
@@ -100,7 +212,7 @@ export async function hydrate() {
       },
     ),
   )
-  replaceDb({ ...getDb(), ...Object.fromEntries(entries) })
+  replaceDb(normalizeDb({ ...getDb(), ...Object.fromEntries(entries) }))
 }
 
 export function actorName(db: DemoDB) {

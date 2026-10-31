@@ -8,6 +8,7 @@ import {
 } from "react-router"
 import { ToastProvider } from "@/components/ui/overlays"
 import { buttonClass } from "@/components/ui/Button"
+import { hydrate } from "@/services/core"
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
@@ -18,6 +19,10 @@ function ScrollToTop() {
 }
 
 export function Root() {
+  useEffect(() => {
+    hydrate().catch(() => undefined)
+  }, [])
+
   return (
     <ToastProvider>
       <ScrollToTop />

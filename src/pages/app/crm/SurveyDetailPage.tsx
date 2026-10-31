@@ -417,7 +417,7 @@ export default function SurveyDetailPage() {
               }))}
               onError={(m) => toast({ tone: "error", title: m })}
             />
-            {!editable && survey.photos.length === 0 && (
+            {!editable && (survey.photos?.length ?? 0) === 0 && (
               <p className="text-sm text-muted">No photographs.</p>
             )}
           </Panel>
@@ -460,11 +460,11 @@ export default function SurveyDetailPage() {
               </Button>
             }
           >
-            {survey.notes.length === 0 ? (
+            {(survey.notes?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted">No notes.</p>
             ) : (
               <ul className="space-y-3">
-                {survey.notes.map((n) => (
+                {survey.notes?.map((n) => (
                   <li
                     key={n.id}
                     className="rounded-xl bg-forest/[0.04] p-3 text-sm"

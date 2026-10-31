@@ -652,13 +652,13 @@ export function ProgressTimeline({
 /* ============================ Activity timeline =========================== */
 
 export function ActivityTimeline({
-  items,
+  items = [],
   empty = "No activity yet.",
 }: {
-  items: { id: string; text: string; actor?: string; at: string }[]
+  items?: { id: string; text: string; actor?: string; at: string }[]
   empty?: string
 }) {
-  if (!items.length)
+  if (!items || !items.length)
     return <p className="py-6 text-center text-sm text-muted">{empty}</p>
   return (
     <ol className="relative space-y-4 before:absolute before:top-2 before:bottom-2 before:left-[5px] before:w-px before:bg-forest/10">

@@ -84,8 +84,24 @@ export default function LeadDetailPage() {
         }
       />
     )
-  const customer = db.customers.find((c) => c.id === lead.customerId)!
-  const site = db.sites.find((s) => s.id === lead.siteId)!
+  const customer = db.customers.find((c) => c.id === lead.customerId) ?? {
+    id: lead.customerId,
+    name: (lead as any).fullName || (lead as any).name || "Customer",
+    phone: (lead as any).phone || "",
+    email: (lead as any).email,
+    language: (lead as any).preferredLanguage || "English",
+    contactMethod: "Phone" as const,
+    createdAt: lead.createdAt,
+  }
+  const site = db.sites.find((s) => s.id === lead.siteId) ?? {
+    id: lead.siteId ?? `SITE-${lead.id}`,
+    customerId: customer.id,
+    propertyType: (lead as any).propertyType ?? "Residential",
+    address: (lead as any).address ?? "",
+    city: (lead as any).city ?? "",
+    state: "Maharashtra",
+    pin: (lead as any).pin ?? "",
+  }
   const missing = missingLeadFields(lead, customer, site)
   const surveys = db.surveys.filter((s) => s.leadId === lead.id)
   const activeSurvey =
@@ -111,7 +127,7 @@ export default function LeadDetailPage() {
     {
       id: "activity",
       label: "Activity",
-      count: lead.notes.length + activity.length,
+      count: (lead.notes?.length ?? 0) + (activity?.length ?? 0),
     },
   ]
 
@@ -481,11 +497,11 @@ export default function LeadDetailPage() {
               </Button>
             }
           >
-            {lead.notes.length === 0 ? (
+            {(lead.notes?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted">No notes yet.</p>
             ) : (
               <ul className="space-y-3">
-                {lead.notes.map((n) => (
+                {lead.notes?.map((n) => (
                   <li key={n.id} className="rounded-2xl bg-sunshine/10 p-3">
                     <p className="text-sm text-ink">{n.text}</p>
                     <p className="mt-1 text-[12px] text-muted">

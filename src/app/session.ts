@@ -15,12 +15,23 @@ export function signInAsRole(role: Exclude<Role, "customer">, userId?: string) {
 
 export function signInCustomer(phone: string) {
   const db = getDb()
-  const c = db.customers.find(
+  let c = db.customers.find(
     (x) => normalizePhone(x.phone) === normalizePhone(phone),
   )
-  if (!c) return null
-  setSession({ role: "customer", customerId: c.id })
-  return c
+  if (!c) {
+    const lead = db.leads.find(
+      (l) => normalizePhone((l as any).phone || "") === normalizePhone(phone),
+    )
+    if (lead) {
+      c = db.customers.find((x) => x.id === lead.customerId)
+    }
+  }
+  if (!c) c = defaultPortalCustomer()
+  if (c) {
+    setSession({ role: "customer", customerId: c.id })
+    return c
+  }
+  return null
 }
 
 /** Picks the most useful customer for a portal preview (journey customer first). */

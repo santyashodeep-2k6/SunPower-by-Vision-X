@@ -52,6 +52,34 @@ public record LeadResponse(
         return id != null ? id.toString() : null;
     }
 
+    @JsonProperty("siteId")
+    public String siteId() {
+        return id != null ? "site-" + id.toString() : null;
+    }
+
+    @JsonProperty("roofArea")
+    public BigDecimal roofArea() {
+        return roofAreaSqft;
+    }
+
+    @JsonProperty("preferredCapacity")
+    public BigDecimal preferredCapacity() {
+        return requestedCapacityKw;
+    }
+
+    @JsonProperty("notes")
+    public java.util.List<java.util.Map<String, String>> notes() {
+        if (qualificationNotes != null && !qualificationNotes.isBlank()) {
+            return java.util.List.of(java.util.Map.of(
+                    "id", "note-init",
+                    "text", qualificationNotes,
+                    "author", "AI / System",
+                    "at", createdAt != null ? createdAt.toString() : java.time.Instant.now().toString()
+            ));
+        }
+        return java.util.Collections.emptyList();
+    }
+
     public static LeadResponse from(Lead lead) {
         return new LeadResponse(
                 lead.getId(),

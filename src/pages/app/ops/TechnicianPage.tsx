@@ -251,7 +251,7 @@ function JobView({
             <Clock className="h-4 w-4 text-botanical" />
             {openSheet.length ? (
               <>Started {fmtTime(openSheet[0].start)} · timer running</>
-            ) : inst.timesheets.length ? (
+            ) : inst.timesheets?.length ? (
               <>Last session ended {fmtTime(inst.timesheets.at(-1)?.end)}</>
             ) : (
               "Not started"
