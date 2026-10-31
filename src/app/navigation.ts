@@ -17,6 +17,7 @@ import {
   Wrench,
   Receipt,
   Sun,
+  Flame,
 } from "lucide-react"
 import type { Role } from "@/lib/types"
 
@@ -150,6 +151,13 @@ export const NAV_ITEMS: NavItem[] = [
     group: "After-sales",
   },
   {
+    to: "/app/customer-priority",
+    label: "Customer Priority",
+    icon: Flame,
+    roles: ["admin"],
+    group: "Management",
+  },
+  {
     to: "/app/reports",
     label: "Reports",
     icon: BarChart3,
@@ -216,6 +224,7 @@ export const SEGMENT_LABEL: Record<string, string> = {
   "service-tickets": "Service Tickets",
   reports: "Reports",
   users: "Users",
+  "customer-priority": "Customer Priority",
   settings: "Settings",
   passport: "Asset Passport",
 }

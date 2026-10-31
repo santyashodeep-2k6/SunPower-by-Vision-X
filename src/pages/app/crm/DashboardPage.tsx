@@ -16,6 +16,7 @@ import {
   CalendarClock,
   ClipboardCheck,
   FileText,
+  Flame,
   Inbox,
   Percent,
   Users,
@@ -33,7 +34,7 @@ import {
 import { DemoBadge } from "@/components/ui/feedback"
 import { JourneyGuide } from "@/components/special/JourneyGuide"
 import { AIAssistantInsightsCard } from "@/components/special/AIAssistantInsightsCard"
-import { CustomerPhasePriorityCard } from "@/components/special/CustomerPhasePriorityCard"
+import { CustomerPhasePriorityCard, resolveCustomerPhase } from "@/components/special/CustomerPhasePriorityCard"
 import { LEAD_STATUSES, LeadsTable } from "./LeadsTable"
 
 export const CHART_COLORS = [
@@ -79,6 +80,10 @@ export default function DashboardPage() {
       {},
     ),
   ).map(([name, value]) => ({ name, value }))
+  const highPriorityCount = db.customers.filter(
+    (c) => resolveCustomerPhase(c, db).priority === "Highest"
+  ).length
+
   const followUps = db.leads
     .filter((l) => l.followUpAt && !["Won", "Lost"].includes(l.status))
     .sort((a, b) => a.followUpAt!.localeCompare(b.followUpAt!))
@@ -94,7 +99,7 @@ export default function DashboardPage() {
       />
       <div className="space-y-6">
         <JourneyGuide db={db} defaultOpen={false} />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
           <StatCard
             label="Total leads"
             value={k.total}
@@ -140,6 +145,14 @@ export default function DashboardPage() {
             accent="emerald"
             to="/app/leads?status=Won"
             sub={`${k.won} won · ${k.lost} lost`}
+          />
+          <StatCard
+            label="High Priority Customers"
+            value={highPriorityCount}
+            icon={<Flame className="h-4 w-4" />}
+            accent="amber"
+            to="/app/customer-priority"
+            sub="Active installation phase"
           />
         </div>
 

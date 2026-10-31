@@ -218,9 +218,12 @@ export function resolveCustomerPhase(
 export function CustomerPhasePriorityCard({
   db,
   className = "",
+  fullPage = false,
 }: {
   db: DemoDB
   className?: string
+  /** When true, shows all rows and hides the "View all" footer link. */
+  fullPage?: boolean
 }) {
   const [filter, setFilter] = useState<"all" | "highest" | "median" | "least">("all")
   const [search, setSearch] = useState("")
@@ -454,7 +457,7 @@ export function CustomerPhasePriorityCard({
                 </td>
               </tr>
             ) : (
-              filtered.slice(0, 8).map((item) => (
+              filtered.slice(0, fullPage ? filtered.length : 8).map((item) => (
                 <tr
                   key={item.customer.id}
                   className={`transition hover:bg-[#F9FCF8] ${
@@ -615,14 +618,23 @@ export function CustomerPhasePriorityCard({
       {/* Footer navigation */}
       <div className="flex items-center justify-between border-t border-forest/8 bg-[#FAFDF9] px-4 py-2.5 text-xs text-muted">
         <span>
-          Showing {Math.min(8, filtered.length)} of {filtered.length} prioritized customers
+          Showing {fullPage ? filtered.length : Math.min(8, filtered.length)} of {filtered.length} prioritized customers
         </span>
         <div className="flex items-center gap-3">
+          {!fullPage && (
+            <Link
+              to="/app/customer-priority"
+              className="inline-flex items-center gap-1 font-medium text-botanical hover:underline"
+            >
+              View full priority panel
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          )}
           <Link
             to="/app/installations"
             className="inline-flex items-center gap-1 font-medium text-botanical hover:underline"
           >
-            Manage all active installations
+            Manage active installations
             <ArrowRight className="h-3 w-3" />
           </Link>
         </div>

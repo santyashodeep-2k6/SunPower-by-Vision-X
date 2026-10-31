@@ -156,6 +156,10 @@ export const router = createBrowserRouter(
               lazy: page(() => import("@/pages/app/admin/UsersPage")),
             },
             {
+              path: "customer-priority",
+              lazy: page(() => import("@/pages/app/admin/CustomerPriorityPage")),
+            },
+            {
               path: "settings",
               lazy: page(() => import("@/pages/app/admin/SettingsPage")),
             },
