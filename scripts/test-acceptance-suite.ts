@@ -1,20 +1,20 @@
-import { getDb, replaceDb, setSession, mutate } from "../src/data/store"
-import { buildSeed } from "../src/data/seed"
-import { byId, projectFinancials, warrantyState, paidForOrder } from "../src/lib/rules"
-import { buildBom, panelCount, quoteItemsFor, PACKAGES, inverterId } from "../src/lib/catalog"
+import { getDb, replaceDb, setSession, mutate } from "@/data/store"
+import { buildSeed } from "@/data/seed"
+import { byId, projectFinancials, warrantyState, paidForOrder } from "@/lib/rules"
+import { buildBom, panelCount, quoteItemsFor, PACKAGES, inverterId } from "@/lib/catalog"
 import {
   createQuotation,
   sendQuotation,
   convertToSalesOrder,
   scheduleSurvey,
-} from "../src/services/crm"
+} from "@/services/crm"
 import {
   allocateSerial,
   confirmDispatch,
   scheduleInstallation,
   completeInstallation,
   recordDelivery,
-} from "../src/services/operations"
+} from "@/services/operations"
 import {
   verifyWarranty,
   recordDiagnosis,
@@ -24,9 +24,9 @@ import {
   requestCustomerConfirmation,
   confirmRepair,
   closeTicket,
-} from "../src/services/aftersales"
-import { uid } from "../src/lib/format"
-import type { Dispatch } from "../src/lib/types"
+} from "@/services/aftersales"
+import { uid } from "@/lib/format"
+import type { Dispatch } from "@/lib/types"
 
 let passed = 0
 let failed = 0

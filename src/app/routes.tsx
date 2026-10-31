@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import {
   createBrowserRouter,
+  Navigate,
   type LazyRouteFunction,
   type RouteObject,
 } from "react-router"
@@ -33,6 +34,12 @@ export const router = createBrowserRouter(
       HydrateFallback: () => <LoadingState />,
       children: [
         { index: true, Component: HomePage },
+        { path: "solutions", Component: () => <Navigate to="/#solutions" replace /> },
+        { path: "how-it-works", Component: () => <Navigate to="/#how-it-works" replace /> },
+        { path: "services", Component: () => <Navigate to="/#services" replace /> },
+        { path: "about", Component: () => <Navigate to="/#about" replace /> },
+        { path: "contact", Component: () => <Navigate to="/#about" replace /> },
+        { path: "calculator", Component: () => <Navigate to="/assistant" replace /> },
         {
           path: "enquiry",
           lazy: page(() => import("@/pages/public/EnquiryPage")),
@@ -64,6 +71,9 @@ export const router = createBrowserRouter(
             {
               path: "dashboard",
               lazy: page(() => import("@/pages/app/crm/DashboardPage")),
+            },
+            { path: "ai-lead-capture", Component: () => <Navigate to="/app/conversations" replace /> },
+            { path: "ai-agent", Component: () => <Navigate to="/assistant" replace />
             },
             {
               path: "leads",
