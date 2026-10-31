@@ -72,7 +72,29 @@ export default function QuotationDetailPage() {
   const totals = dirty
     ? computeTotals(items, quote.labour, quote.otherCharges, db.settings)
     : quote.totals
-  const c = db.customers.find((x) => x.id === quote.customerId)!
+  const lead = db.leads.find((l) => l.id === quote.leadId)
+  const c =
+    db.customers.find((x) => x.id === quote.customerId) ??
+    db.customers.find((x) => x.id === quote.leadId) ??
+    (lead
+      ? {
+          id: quote.customerId || lead.customerId || lead.id,
+          name: (lead as any).fullName || (lead as any).name || "Customer",
+          phone: (lead as any).phone || "",
+          email: (lead as any).email || "",
+          language: "English",
+          contactMethod: "Phone" as const,
+          createdAt: lead.createdAt || new Date().toISOString(),
+        }
+      : {
+          id: quote.customerId || "CUS-DEFAULT",
+          name: "Registered Customer",
+          phone: "",
+          email: undefined,
+          language: "English",
+          contactMethod: "Phone" as const,
+          createdAt: new Date().toISOString(),
+        })
   const survey = db.surveys.find((s) => s.id === quote.surveyId)
   const sorted = [...items].sort(
     (a, b) =>

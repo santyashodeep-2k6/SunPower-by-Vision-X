@@ -31,6 +31,9 @@ public class Quotation {
     @Column(name = "lead_id", length = 36)
     private String leadId;
 
+    @Column(name = "customer_id", length = 100)
+    private String customerId;
+
     @Column(name = "site_id", length = 36)
     private String siteId;
 
@@ -108,6 +111,9 @@ public class Quotation {
 
     public String getLeadId() { return leadId; }
     public void setLeadId(String leadId) { this.leadId = leadId; }
+
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
 
     public String getSiteId() { return siteId; }
     public void setSiteId(String siteId) { this.siteId = siteId; }

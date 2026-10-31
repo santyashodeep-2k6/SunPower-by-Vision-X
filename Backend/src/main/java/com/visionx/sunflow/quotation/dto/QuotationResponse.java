@@ -13,6 +13,7 @@ import java.util.Map;
 public record QuotationResponse(
         String id,
         String quoteNumber,
+        String customerId,
         String leadId,
         String siteId,
         String surveyId,
@@ -32,6 +33,7 @@ public record QuotationResponse(
 ) {
     @JsonProperty("customerId")
     public String customerId() {
+        if (customerId != null && !customerId.isBlank()) return customerId;
         return leadId != null ? leadId : id;
     }
 
@@ -85,6 +87,7 @@ public record QuotationResponse(
         return new QuotationResponse(
                 q.getId(),
                 q.getQuoteNumber(),
+                q.getCustomerId(),
                 q.getLeadId(),
                 q.getSiteId(),
                 q.getSurveyId(),

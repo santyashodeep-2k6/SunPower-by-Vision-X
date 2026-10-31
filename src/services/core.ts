@@ -213,6 +213,28 @@ export function normalizeDb(data: DemoDB): DemoDB {
       })
     }
   }
+  // Normalize quotations and ensure quotation customers are registered
+  next.quotations = (next.quotations || []).map((q: any) => ({
+    ...q,
+    items: Array.isArray(q.items) ? q.items : [],
+  }))
+
+  for (const q of next.quotations) {
+    const custId = q.customerId || q.leadId
+    if (custId && !customerMap.has(custId)) {
+      const lead = next.leads.find((l: any) => l.id === q.leadId || l.id === custId)
+      customerMap.set(custId, {
+        id: custId,
+        name: (lead as any)?.name || (lead as any)?.fullName || (q as any)?.customerName || 'Registered Customer',
+        phone: (lead as any)?.phone || (q as any)?.customerPhone || '',
+        email: (lead as any)?.email || (q as any)?.customerEmail || undefined,
+        language: 'English',
+        contactMethod: 'Phone' as const,
+        createdAt: q.createdAt || new Date().toISOString(),
+      })
+    }
+  }
+
   next.customers = Array.from(customerMap.values())
   next.sites = Array.from(siteMap.values())
 

@@ -9,6 +9,10 @@ import com.visionx.sunflow.quotation.repository.QuotationRepository;
 import com.visionx.sunflow.survey.Survey;
 import com.visionx.sunflow.survey.SurveyRepository;
 import com.visionx.sunflow.survey.SurveyStatus;
+import com.visionx.sunflow.customer.entity.Customer;
+import com.visionx.sunflow.customer.repository.CustomerRepository;
+import com.visionx.sunflow.lead.Lead;
+import com.visionx.sunflow.lead.LeadRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,15 +43,21 @@ public class QuotationService {
     private final QuotationRepository quotationRepository;
     private final SurveyRepository surveyRepository;
     private final BOMCalculationEngine bomEngine;
+    private final CustomerRepository customerRepository;
+    private final LeadRepository leadRepository;
 
     public QuotationService(
             QuotationRepository quotationRepository,
             SurveyRepository surveyRepository,
-            BOMCalculationEngine bomEngine
+            BOMCalculationEngine bomEngine,
+            CustomerRepository customerRepository,
+            LeadRepository leadRepository
     ) {
         this.quotationRepository = quotationRepository;
         this.surveyRepository = surveyRepository;
         this.bomEngine = bomEngine;
+        this.customerRepository = customerRepository;
+        this.leadRepository = leadRepository;
     }
 
     @Transactional
@@ -98,16 +108,51 @@ public class QuotationService {
         if (siteId == null) {
             siteId = "SITE-DEFAULT";
         }
-        if (siteId != null && siteId.length() > 36) {
-            siteId = siteId.substring(siteId.length() - 36);
+        // Ensure customer registration exists; register customer first if needed
+        String customerId = null;
+        Lead associatedLead = null;
+        if (request.surveyId() != null && !request.surveyId().isBlank()) {
+            try {
+                UUID sId = UUID.fromString(request.surveyId());
+                var optSurvey = surveyRepository.findById(sId);
+                if (optSurvey.isPresent() && optSurvey.get().getLead() != null) {
+                    associatedLead = optSurvey.get().getLead();
+                }
+            } catch (Exception ignored) {}
         }
-        if (leadId != null && leadId.length() > 36) {
-            leadId = leadId.substring(leadId.length() - 36);
+        if (associatedLead == null && leadId != null) {
+            try {
+                associatedLead = leadRepository.findById(UUID.fromString(leadId)).orElse(null);
+            } catch (Exception ignored) {}
+        }
+
+        if (associatedLead != null) {
+            final Lead l = associatedLead;
+            Customer cust = customerRepository.findByPhone(l.getPhone())
+                    .orElseGet(() -> {
+                        Customer newC = new Customer();
+                        newC.setName(l.getFullName() != null && !l.getFullName().isBlank() ? l.getFullName() : "Customer");
+                        newC.setPhone(l.getPhone() != null && !l.getPhone().isBlank() ? l.getPhone() : "0000000000");
+                        newC.setEmail(l.getEmail());
+                        return customerRepository.save(newC);
+                    });
+            customerId = cust.getId().toString();
+            leadId = associatedLead.getId().toString();
+        } else {
+            customerId = leadId;
+        }
+
+        if (siteId != null && siteId.length() > 100) {
+            siteId = siteId.substring(siteId.length() - 100);
+        }
+        if (leadId != null && leadId.length() > 100) {
+            leadId = leadId.substring(leadId.length() - 100);
         }
 
         var calc = bomEngine.calculateBOM(capacity, propertyType);
 
         Quotation q = new Quotation();
+        q.setCustomerId(customerId);
         q.setLeadId(leadId);
         q.setSiteId(siteId);
         q.setSurveyId(request.surveyId());

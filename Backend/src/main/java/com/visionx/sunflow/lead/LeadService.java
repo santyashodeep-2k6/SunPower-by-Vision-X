@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.visionx.sunflow.customer.entity.Customer;
+import com.visionx.sunflow.customer.repository.CustomerRepository;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -17,9 +19,11 @@ import java.util.UUID;
 public class LeadService {
 
     private final LeadRepository leadRepository;
+    private final CustomerRepository customerRepository;
 
-    public LeadService(LeadRepository leadRepository) {
+    public LeadService(LeadRepository leadRepository, CustomerRepository customerRepository) {
         this.leadRepository = leadRepository;
+        this.customerRepository = customerRepository;
     }
 
     @Transactional
@@ -42,6 +46,18 @@ public class LeadService {
         lead.setQualificationNotes(request.qualificationNotes());
 
         Lead saved = leadRepository.save(lead);
+
+        // Auto-register customer if not already registered
+        try {
+            if (saved.getPhone() != null && !saved.getPhone().isBlank() && customerRepository.findByPhone(saved.getPhone().trim()).isEmpty()) {
+                Customer newC = new Customer();
+                newC.setName(saved.getFullName() != null && !saved.getFullName().isBlank() ? saved.getFullName() : "Customer");
+                newC.setPhone(saved.getPhone().trim());
+                newC.setEmail(saved.getEmail());
+                customerRepository.save(newC);
+            }
+        } catch (Exception ignored) {}
+
         return LeadResponse.from(saved);
     }
 
@@ -68,6 +84,18 @@ public class LeadService {
         if (patch.containsKey("qualificationNotes")) lead.setQualificationNotes(patch.get("qualificationNotes") != null ? patch.get("qualificationNotes").toString() : null);
 
         Lead saved = leadRepository.save(lead);
+
+        // Auto-register customer if not already registered
+        try {
+            if (saved.getPhone() != null && !saved.getPhone().isBlank() && customerRepository.findByPhone(saved.getPhone().trim()).isEmpty()) {
+                Customer newC = new Customer();
+                newC.setName(saved.getFullName() != null && !saved.getFullName().isBlank() ? saved.getFullName() : "Customer");
+                newC.setPhone(saved.getPhone().trim());
+                newC.setEmail(saved.getEmail());
+                customerRepository.save(newC);
+            }
+        } catch (Exception ignored) {}
+
         return LeadResponse.from(saved);
     }
 
@@ -77,6 +105,18 @@ public class LeadService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lead", id));
         lead.setAssignedTo(userId);
         Lead saved = leadRepository.save(lead);
+
+        // Auto-register customer if not already registered
+        try {
+            if (saved.getPhone() != null && !saved.getPhone().isBlank() && customerRepository.findByPhone(saved.getPhone().trim()).isEmpty()) {
+                Customer newC = new Customer();
+                newC.setName(saved.getFullName() != null && !saved.getFullName().isBlank() ? saved.getFullName() : "Customer");
+                newC.setPhone(saved.getPhone().trim());
+                newC.setEmail(saved.getEmail());
+                customerRepository.save(newC);
+            }
+        } catch (Exception ignored) {}
+
         return LeadResponse.from(saved);
     }
 
@@ -87,6 +127,18 @@ public class LeadService {
         String existing = lead.getQualificationNotes() != null ? lead.getQualificationNotes() + "\n" : "";
         lead.setQualificationNotes(existing + note);
         Lead saved = leadRepository.save(lead);
+
+        // Auto-register customer if not already registered
+        try {
+            if (saved.getPhone() != null && !saved.getPhone().isBlank() && customerRepository.findByPhone(saved.getPhone().trim()).isEmpty()) {
+                Customer newC = new Customer();
+                newC.setName(saved.getFullName() != null && !saved.getFullName().isBlank() ? saved.getFullName() : "Customer");
+                newC.setPhone(saved.getPhone().trim());
+                newC.setEmail(saved.getEmail());
+                customerRepository.save(newC);
+            }
+        } catch (Exception ignored) {}
+
         return LeadResponse.from(saved);
     }
 

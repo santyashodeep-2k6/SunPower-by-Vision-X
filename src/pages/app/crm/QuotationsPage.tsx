@@ -39,16 +39,23 @@ export default function QuotationsPage() {
   const rows = useMemo(
     () =>
       db.quotations
-        .map((x) => ({
-          x,
-          st: effectiveQuoteStatus(x),
-          c: db.customers.find((c) => c.id === x.customerId),
-        }))
+        .map((x) => {
+          const lead = db.leads.find((l) => l.id === x.leadId)
+          const customer =
+            db.customers.find((c) => c.id === x.customerId) ??
+            db.customers.find((c) => c.id === x.leadId) ??
+            (lead ? { id: x.customerId, name: (lead as any).fullName || (lead as any).name, phone: (lead as any).phone } : undefined)
+          return {
+            x,
+            st: effectiveQuoteStatus(x),
+            c: customer,
+          }
+        })
         .filter(
           ({ x, st, c }) =>
             (!status || GROUPS[status]?.includes(st)) &&
             (!q ||
-              `${x.id} ${c?.name}`.toLowerCase().includes(q.toLowerCase())),
+              `${x.id} ${(c as any)?.name ?? ""}`.toLowerCase().includes(q.toLowerCase())),
         ),
     [db, status, q],
   )
@@ -96,11 +103,18 @@ export default function QuotationsPage() {
       render: (r) => <StatusBadge status={r.st} />,
     },
   ]
-  const surveys = db.surveys.map((s) => ({
-    value: s.id,
-    label: `${s.id} — ${db.customers.find((c) => c.id === s.customerId)?.name} (${s.status})`,
-    disabled: s.status !== "Approved",
-  }))
+  const surveys = db.surveys.map((s) => {
+    const cust =
+      db.customers.find((c) => c.id === s.customerId) ??
+      db.customers.find((c) => c.id === s.leadId) ??
+      db.leads.find((l) => l.id === s.leadId)
+    const name = (cust as any)?.name || (cust as any)?.fullName || "Customer"
+    return {
+      value: s.id,
+      label: `${s.id} — ${name} (${s.status})`,
+      disabled: s.status !== "Approved",
+    }
+  })
   const count = (k: string) =>
     db.quotations.filter((x) => GROUPS[k].includes(effectiveQuoteStatus(x)))
       .length
