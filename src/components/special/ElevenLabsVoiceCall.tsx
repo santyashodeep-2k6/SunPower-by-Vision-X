@@ -159,17 +159,37 @@ export function ElevenLabsVoiceCall({ agentId, onClose, autoStart = false }: Pro
       VOICE_LANGUAGES.find((l) => l.code === selectedLang) || VOICE_LANGUAGES[0]
 
     try {
-      // Build startSession configuration.
-      // Notice: In ElevenLabs, overriding system prompt or dynamic variables from the client
-      // will trigger "Server error: Unknown error (1006)" if "Allow client overrides" is
-      // disabled in the agent's ElevenLabs Security dashboard.
-      // We pass language and greeting overrides cleanly, falling back to direct connection if needed.
+      // Connect to ElevenLabs Conversational AI.
+      // NOTE: We do NOT pass client-side overrides during WebSocket handshake,
+      // as ElevenLabs servers abruptly terminate the socket with Error 1006 if
+      // "Allow client overrides" is disabled in the agent's security dashboard.
+      // Language adaptation is handled cleanly via post-connect instruction and UI greeting.
       const sessionConfig: Parameters<typeof VoiceConversation.startSession>[0] = {
         agentId: resolvedAgentId,
         onConnect: ({ conversationId: id }) => {
           setConversationId(id)
           setStatus('connected')
           setMode('listening')
+
+          // If a non-English language was selected, display the localized greeting
+          // in the live transcript and guide the multilingual agent to converse in that language.
+          if (selectedLang !== 'en') {
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            setMessages((prev) => [
+              ...prev,
+              { id: ++msgCountRef.current, role: 'agent', text: langConfig.greeting, time: now },
+            ])
+
+            setTimeout(() => {
+              try {
+                sessionRef.current?.sendUserMessage(
+                  `[The user would like to speak in ${langConfig.label} (${langConfig.native}). Please answer and speak in ${langConfig.label}.]`
+                )
+              } catch {
+                /* ignore */
+              }
+            }, 500)
+          }
         },
         onDisconnect: () => {
           setStatus('ended')
@@ -178,7 +198,12 @@ export function ElevenLabsVoiceCall({ agentId, onClose, autoStart = false }: Pro
         },
         onError: (errMessage, context) => {
           console.error('ElevenLabs conversation error:', errMessage, context)
-          const msg = typeof errMessage === 'string' ? errMessage : 'Voice connection error occurred.'
+          const raw = String(errMessage || '')
+          const msg = raw.includes('1006')
+            ? 'Voice server closed connection unexpectedly (1006). Please try reconnecting.'
+            : typeof errMessage === 'string'
+              ? errMessage
+              : 'Voice connection error occurred.'
           setError(msg)
           setStatus('error')
           sessionRef.current = null
@@ -201,16 +226,6 @@ export function ElevenLabsVoiceCall({ agentId, onClose, autoStart = false }: Pro
             setStatus('ended')
           }
         },
-      }
-
-      // If user explicitly picked a non-English language, include language override
-      if (selectedLang !== 'en') {
-        sessionConfig.overrides = {
-          agent: {
-            language: langConfig.code,
-            firstMessage: langConfig.greeting,
-          },
-        }
       }
 
       const session = await VoiceConversation.startSession(sessionConfig)

@@ -407,7 +407,8 @@ export function LeadsTable({
         <SearchFilterBar
           search={get("q")}
           onSearch={(v) => setParam("q", v)}
-          placeholder="Search name, phone, lead ID…"
+          debounceMs={300}
+          placeholder="Search customer name, phone, lead ID…"
           onReset={() => setParams(new URLSearchParams(), { replace: true })}
           filters={[
             {

@@ -62,7 +62,9 @@ export function CreateTicketModal({
     setInstId(installs[0]?.id ?? "")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId])
-  useEffect(() => setSerial(""), [instId])
+  useEffect(() => {
+    setSerial("")
+  }, [instId])
   const save = () => {
     setTried(true)
     if (!instId || issue.trim().length < 10) return

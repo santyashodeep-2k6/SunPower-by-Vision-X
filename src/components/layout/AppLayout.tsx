@@ -534,7 +534,9 @@ export function AppLayout() {
   const location = useLocation()
   const crumbs = useBreadcrumb()
   const [mobileOpen, setMobileOpen] = useState(false)
-  useEffect(() => setMobileOpen(false), [location.pathname])
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
   if (!session)
     return (
       <Navigate

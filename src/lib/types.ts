@@ -86,12 +86,28 @@ export interface Lead {
   aiSummary?: AISummary
 }
 
+export interface SolarEstimate {
+  capacityKw: number
+  roofAreaSqFt: number
+  monthlyUnits: number
+  annualUnits: number
+  grossCost: number
+  subsidy: number
+  netCost: number
+  monthlySavings: number
+  annualSavings: number
+  paybackYears: number
+  lifetimeSavings25Y: number
+  systemType: SystemType
+}
+
 export interface ChatMessage {
   id: ID
   from: "customer" | "assistant" | "agent"
   text: string
   at: ISODate
   authorName?: string
+  estimate?: SolarEstimate
 }
 
 export interface AssistantFields {

@@ -42,7 +42,9 @@ export default function QuotationDetailPage() {
     method: Payment["method"]
     reference: string
   }>({ amount: "", method: "UPI", reference: "" })
-  useEffect(() => setQty({}), [quote?.packageId, quote?.status])
+  useEffect(() => {
+    setQty({})
+  }, [quote?.packageId, quote?.status])
   const items = useMemo(
     () =>
       quote

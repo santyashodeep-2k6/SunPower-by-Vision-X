@@ -341,7 +341,9 @@ export function SearchableDropdown({
     document.addEventListener("mousedown", onDown)
     return () => document.removeEventListener("mousedown", onDown)
   }, [open])
-  useEffect(() => setHi(0), [q])
+  useEffect(() => {
+    setHi(0)
+  }, [q])
   const pick = (o: Option) => {
     if (o.disabled) return
     onChange(o.value)

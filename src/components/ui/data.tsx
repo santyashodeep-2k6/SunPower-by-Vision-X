@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Link } from "react-router"
 import {
   ArrowDown,
@@ -267,6 +267,7 @@ export function SearchFilterBar({
   search,
   onSearch,
   placeholder = "Search…",
+  debounceMs = 300,
   filters = [],
   actions,
   onReset,
@@ -275,20 +276,63 @@ export function SearchFilterBar({
   search: string
   onSearch: (v: string) => void
   placeholder?: string
+  debounceMs?: number
   filters?: FilterDef[]
   actions?: ReactNode
   onReset?: () => void
   children?: ReactNode
 }) {
-  const active = !!search || filters.some((f) => f.value)
+  const [localSearch, setLocalSearch] = useState(search)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync external search changes (e.g. URL change or reset) to local state
+  useEffect(() => {
+    setLocalSearch(search)
+  }, [search])
+
+  const handleSearchChange = (value: string) => {
+    setLocalSearch(value)
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
+
+    // If clearing or debounce is disabled, trigger immediately
+    if (debounceMs <= 0 || value === "") {
+      onSearch(value)
+      return
+    }
+
+    // Debounce fast keystrokes
+    timerRef.current = setTimeout(() => {
+      onSearch(value)
+    }, debounceMs)
+  }
+
+  const handleReset = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    setLocalSearch("")
+    if (onReset) onReset()
+    else onSearch("")
+  }
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  const active = !!localSearch || !!search || filters.some((f) => f.value)
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
       <div className="relative min-w-0 flex-1 lg:max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted" />
         <input
           type="search"
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
+          value={localSearch}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder={placeholder}
           aria-label={placeholder}
           className="field h-10 pl-10"
@@ -318,7 +362,7 @@ export function SearchFilterBar({
         {active && onReset && (
           <button
             type="button"
-            onClick={onReset}
+            onClick={handleReset}
             className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-[13px] text-ink/70 hover:bg-forest/6"
           >
             <X className="h-3.5 w-3.5" />

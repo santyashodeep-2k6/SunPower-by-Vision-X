@@ -152,7 +152,8 @@ export default function UsersPage() {
           <SearchFilterBar
             search={q}
             onSearch={setQ}
-            placeholder="Search users…"
+            debounceMs={300}
+            placeholder="Search users by name, email…"
             filters={[
               {
                 id: "r",
