@@ -62,7 +62,8 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public Health & Documentation
+                // Error handling and health
+                .requestMatchers("/error", "/error/**").permitAll()
                 .requestMatchers("/api/health", "/api/v1/health", "/actuator/**").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
@@ -72,6 +73,7 @@ public class SecurityConfig {
                 // Public Website enquiry & passport verification
                 .requestMatchers("/api/leads", "/api/leads/**", "/api/v1/leads", "/api/v1/leads/**").permitAll()
                 .requestMatchers("/api/enquiries", "/api/enquiries/**", "/api/v1/enquiries", "/api/v1/enquiries/**").permitAll()
+                .requestMatchers("/api/surveys", "/api/surveys/**", "/api/v1/surveys", "/api/v1/surveys/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/passports/public/**").permitAll()
                 
                 // ElevenLabs AI Webhooks (HMAC validated in controller)

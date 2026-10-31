@@ -3,6 +3,7 @@ package com.visionx.sunflow.survey;
 import com.visionx.sunflow.common.exception.ResourceNotFoundException;
 import com.visionx.sunflow.lead.Lead;
 import com.visionx.sunflow.lead.LeadRepository;
+import com.visionx.sunflow.lead.LeadStatus;
 import com.visionx.sunflow.survey.dto.SurveyAssessmentUpdateRequest;
 import com.visionx.sunflow.survey.dto.SurveyCreateRequest;
 import com.visionx.sunflow.survey.dto.SurveyResponse;
@@ -43,6 +44,10 @@ public class SurveyService {
         survey.setStatus(SurveyStatus.SCHEDULED);
 
         Survey saved = surveyRepository.save(survey);
+
+        lead.setStatus(LeadStatus.SURVEY_SCHEDULED);
+        leadRepository.save(lead);
+
         return SurveyResponse.from(saved);
     }
 

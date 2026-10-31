@@ -11,3 +11,4 @@ VALUES
     ('11111111-1111-1111-1111-111111111124', 'sales.kavita', 'kavita.deshmukh@sunflow360.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Kavita Deshmukh', '9822000005', 'SALES', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('11111111-1111-1111-1111-111111111125', 'sales.rohan', 'rohan.sharma@sunflow360.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Rohan Sharma', '9822000006', 'SALES', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (id) DO NOTHING;
+

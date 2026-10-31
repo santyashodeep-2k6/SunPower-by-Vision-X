@@ -350,12 +350,12 @@ export function regenerateLeadSummary(id: string) {
 
 /* ================================ Surveys ================================= */
 
-export function scheduleSurvey(
+export async function scheduleSurvey(
   leadId: string,
   surveyorId: string,
   scheduledAt: string,
 ) {
-  return command(
+  const res = await command(
     {
       method: "POST",
       path: `/leads/${leadId}/surveys`,
@@ -416,6 +416,7 @@ export function scheduleSurvey(
       return id
     },
   )
+  return typeof res === "string" ? res : (res as any)?.id || (res as any)?.surveyId || String(res)
 }
 
 export function assignSurveyor(id: string, surveyorId: string) {

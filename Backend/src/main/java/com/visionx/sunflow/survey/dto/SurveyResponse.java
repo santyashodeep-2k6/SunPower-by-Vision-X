@@ -1,5 +1,6 @@
 package com.visionx.sunflow.survey.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.visionx.sunflow.survey.ElectricalConnection;
 import com.visionx.sunflow.survey.RoofType;
 import com.visionx.sunflow.survey.ShadingCondition;
@@ -9,6 +10,9 @@ import com.visionx.sunflow.survey.SurveyStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record SurveyResponse(
@@ -35,6 +39,49 @@ public record SurveyResponse(
         Instant createdAt,
         Instant updatedAt
 ) {
+    @JsonProperty("surveyId")
+    public String surveyId() {
+        return id != null ? id.toString() : null;
+    }
+
+    @JsonProperty("reference")
+    public String reference() {
+        return id != null ? id.toString() : null;
+    }
+
+    @JsonProperty("customerId")
+    public String customerId() {
+        return leadId != null ? leadId.toString() : null;
+    }
+
+    @JsonProperty("siteId")
+    public String siteId() {
+        return leadId != null ? "site-" + leadId.toString() : null;
+    }
+
+    @JsonProperty("surveyorId")
+    public String surveyorId() {
+        return surveyorName != null ? surveyorName : "U-04";
+    }
+
+    @JsonProperty("photos")
+    public List<Object> photos() {
+        return Collections.emptyList();
+    }
+
+    @JsonProperty("notes")
+    public List<Map<String, String>> notes() {
+        if (schedulingNotes != null && !schedulingNotes.isBlank()) {
+            return List.of(Map.of(
+                    "id", "srv-note-1",
+                    "text", schedulingNotes,
+                    "author", "Scheduler",
+                    "at", createdAt != null ? createdAt.toString() : Instant.now().toString()
+            ));
+        }
+        return Collections.emptyList();
+    }
+
     public static SurveyResponse from(Survey survey) {
         return new SurveyResponse(
                 survey.getId(),

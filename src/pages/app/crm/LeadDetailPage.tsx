@@ -888,7 +888,11 @@ export function ScheduleSurveyModal({
                   scheduleSurvey(leadId, surveyor, new Date(at).toISOString()),
                 (sid) => `Survey ${sid} scheduled`,
               )
-                .then((sid) => (onClose(), navigate(`/app/surveys/${sid}`)))
+                .then((sid) => {
+                  const idStr = typeof sid === "string" ? sid : (sid as any)?.id || ""
+                  onClose()
+                  if (idStr) navigate(`/app/surveys/${idStr}`)
+                })
                 .catch(() => undefined)
             }
           >

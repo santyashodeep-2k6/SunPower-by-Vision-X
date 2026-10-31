@@ -13,21 +13,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping({"/api", "/api/v1"})
 @Tag(name = "Surveys", description = "Site survey management and technical assessment endpoints")
 public class SurveyController {
 
@@ -91,7 +85,7 @@ public class SurveyController {
 
     @PostMapping({"/surveys/{id}/reject", "/v1/surveys/{id}/reject"})
     @Operation(summary = "Reject site survey findings")
-    public ResponseEntity<SurveyResponse> rejectSurvey(@PathVariable UUID id, @RequestBody(required = false) java.util.Map<String, String> body) {
+    public ResponseEntity<SurveyResponse> rejectSurvey(@PathVariable UUID id, @RequestBody(required = false) Map<String, String> body) {
         return ResponseEntity.ok(surveyService.updateStatus(id, new SurveyStatusUpdateRequest(SurveyStatus.REJECTED)));
     }
 
@@ -106,5 +100,49 @@ public class SurveyController {
     public ResponseEntity<List<SurveyResponse>> getSurveysByLead(@PathVariable UUID leadId) {
         List<SurveyResponse> response = surveyService.getSurveysByLeadId(leadId);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/leads/{leadId}/surveys")
+    @Operation(summary = "Schedule a site survey for a specific lead")
+    public ResponseEntity<SurveyResponse> scheduleSurveyForLead(
+            @PathVariable UUID leadId,
+            @RequestBody(required = false) Map<String, Object> body
+    ) {
+        String surveyorName = "Rohan Deshpande";
+        String surveyorPhone = "9822000004";
+        Instant scheduledAt = Instant.now().plus(java.time.Duration.ofDays(2));
+        String notes = null;
+
+        if (body != null) {
+            if (body.containsKey("surveyorName") && body.get("surveyorName") != null) {
+                surveyorName = body.get("surveyorName").toString();
+            } else if (body.containsKey("surveyorId") && body.get("surveyorId") != null) {
+                surveyorName = body.get("surveyorId").toString();
+            } else if (body.containsKey("surveyor") && body.get("surveyor") != null) {
+                surveyorName = body.get("surveyor").toString();
+            }
+            if (body.containsKey("surveyorPhone") && body.get("surveyorPhone") != null) {
+                surveyorPhone = body.get("surveyorPhone").toString();
+            }
+            if (body.containsKey("scheduledAt") && body.get("scheduledAt") != null) {
+                try {
+                    scheduledAt = Instant.parse(body.get("scheduledAt").toString());
+                } catch (Exception ignored) {}
+            }
+            if (body.containsKey("notes") && body.get("notes") != null) {
+                notes = body.get("notes").toString();
+            }
+        }
+
+        SurveyCreateRequest request = new SurveyCreateRequest(
+                leadId,
+                surveyorName,
+                surveyorPhone,
+                scheduledAt,
+                null,
+                notes
+        );
+        SurveyResponse response = surveyService.createSurvey(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
