@@ -465,3 +465,4 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
     </div>
   )
 }
+

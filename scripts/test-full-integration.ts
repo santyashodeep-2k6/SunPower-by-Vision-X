@@ -3,6 +3,7 @@ import { submitEnquiry } from "../src/services/crm"
 import { calculateSolarEstimate, assistantService } from "../src/services/assistant"
 import { queryDatabase } from "../src/services/dbLookup"
 import { inr } from "../src/lib/format"
+import { resolveCustomerPhase } from "../src/components/special/CustomerPhasePriorityCard"
 import type { Lead, Quotation, SalesOrder, Installation } from "../src/lib/types"
 
 console.log("=======================================================")
@@ -218,6 +219,36 @@ assert(estFromConv.subsidy > 0, `Derived PM Surya Ghar subsidy ${inr(estFromConv
 // Verify intent scoring
 const hasAdvisorRequest = convos.some((c) => c.status === "Needs Human")
 assert(hasAdvisorRequest, `Successfully flags visitor conversations requesting advisor intervention`)
+
+// -------------------------------------------------------------
+// MODULE 8: Customer Phases & Admin Priority Resolution
+// -------------------------------------------------------------
+console.log("\n--- Module 8: Customer Lifecycle Phases & Priority Engine ---")
+const phaseResults = db.customers.map((c) => resolveCustomerPhase(c, db))
+assert(phaseResults.length === db.customers.length, `Resolved lifecycle phases for all ${phaseResults.length} customers`)
+
+// 1. Highest Priority: Active Installation started
+const activeInstallCust = phaseResults.find((p) => p.phase === "installation_active")
+assert(Boolean(activeInstallCust), `Detected customers in active installation phase (${activeInstallCust?.customer.name})`)
+assert(activeInstallCust?.priority === "Highest", `Customer with active installation assigned Highest priority (got ${activeInstallCust?.priority})`)
+assert(activeInstallCust?.priorityWeight === 100, `Active installation weight is 100`)
+
+// 2. Median Priority: Already Installed
+const installedCust = phaseResults.find((p) => p.phase === "already_installed")
+assert(Boolean(installedCust), `Detected customers with already completed installation (${installedCust?.customer.name})`)
+assert(installedCust?.priority === "Median", `Customer with already installed system assigned Median priority (got ${installedCust?.priority})`)
+assert(installedCust?.priorityWeight === 60, `Already installed system weight is 60`)
+
+// 3. Least Priority: First-time Logged In / Enquiry
+const enquiryCust = phaseResults.find((p) => p.phase === "first_time_enquiry")
+assert(Boolean(enquiryCust), `Detected first-time logged in / enquiry customers (${enquiryCust?.customer.name})`)
+assert(enquiryCust?.priority === "Least", `Customer at enquiry stage assigned Least priority (got ${enquiryCust?.priority})`)
+assert(enquiryCust?.priorityWeight === 10, `First-time enquiry weight is 10`)
+
+// 4. Priority Sorting: Highest (100) > Median (60) > Least (10)
+const sorted = [...phaseResults].sort((a, b) => b.priorityWeight - a.priorityWeight)
+assert(sorted[0].priority === "Highest", `Top sorted customer is Highest priority (${sorted[0].customer.name})`)
+assert(sorted[sorted.length - 1].priority === "Least", `Bottom sorted customer is Least priority (${sorted[sorted.length - 1].customer.name})`)
 
 console.log("\n=======================================================")
 console.log(`FULL INTEGRATION RUN: ${passCount} PASSED, ${failCount} FAILED`)

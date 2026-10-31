@@ -33,6 +33,7 @@ import {
 import { DemoBadge } from "@/components/ui/feedback"
 import { JourneyGuide } from "@/components/special/JourneyGuide"
 import { AIAssistantInsightsCard } from "@/components/special/AIAssistantInsightsCard"
+import { CustomerPhasePriorityCard } from "@/components/special/CustomerPhasePriorityCard"
 import { LEAD_STATUSES, LeadsTable } from "./LeadsTable"
 
 export const CHART_COLORS = [
@@ -144,6 +145,9 @@ export default function DashboardPage() {
 
         {/* AI Prospect Intelligence & Live Chat Insights Feed */}
         <AIAssistantInsightsCard db={db} />
+
+        {/* Admin Customer Phase & Priority Dispatch Center */}
+        <CustomerPhasePriorityCard db={db} />
 
         <div className="grid gap-6 xl:grid-cols-3">
           <ChartCard
