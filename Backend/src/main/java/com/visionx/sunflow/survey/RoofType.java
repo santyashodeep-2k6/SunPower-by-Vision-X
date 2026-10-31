@@ -1,7 +1,6 @@
 package com.visionx.sunflow.survey;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum RoofType {
     RCC_FLAT,
@@ -10,7 +9,6 @@ public enum RoofType {
     GROUND_MOUNT,
     OTHER;
 
-    @JsonValue
     public String toJson() {
         return switch (this) {
             case RCC_FLAT -> "RCC";

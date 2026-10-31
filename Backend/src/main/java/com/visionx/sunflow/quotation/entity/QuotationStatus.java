@@ -1,7 +1,6 @@
 package com.visionx.sunflow.quotation.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * Lifecycle states of an engineering Quotation.
@@ -15,18 +14,6 @@ public enum QuotationStatus {
     SENT,
     ACCEPTED,
     REJECTED;
-
-    @JsonValue
-    public String toJson() {
-        return switch (this) {
-            case DRAFT -> "Draft";
-            case PENDING_SURVEY_APPROVAL -> "Awaiting Response";
-            case APPROVED -> "Draft";
-            case SENT -> "Sent";
-            case ACCEPTED -> "Accepted";
-            case REJECTED -> "Rejected";
-        };
-    }
 
     @JsonCreator
     public static QuotationStatus fromString(String value) {

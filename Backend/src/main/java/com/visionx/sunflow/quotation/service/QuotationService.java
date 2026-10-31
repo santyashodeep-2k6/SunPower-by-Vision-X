@@ -4,6 +4,7 @@ import com.visionx.sunflow.common.exception.ResourceNotFoundException;
 import com.visionx.sunflow.quotation.dto.QuotationCreateRequest;
 import com.visionx.sunflow.quotation.dto.QuotationResponse;
 import com.visionx.sunflow.quotation.entity.Quotation;
+import com.visionx.sunflow.quotation.entity.QuotationItem;
 import com.visionx.sunflow.quotation.entity.QuotationStatus;
 import com.visionx.sunflow.quotation.repository.QuotationRepository;
 import com.visionx.sunflow.survey.Survey;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -67,6 +69,18 @@ public class QuotationService {
         String leadId = request.leadId();
         String siteId = request.siteId();
         String propertyType = request.propertyType();
+
+        if (request.packageId() != null && !request.packageId().isBlank()) {
+            String[] parts = request.packageId().split("-");
+            if (capacity == null && parts.length >= 2) {
+                try {
+                    capacity = new BigDecimal(parts[1]);
+                } catch (Exception ignored) {}
+            }
+            if ((systemType == null || systemType.isBlank()) && parts.length >= 3) {
+                systemType = "OFF".equalsIgnoreCase(parts[2]) ? "OFF_GRID" : "ON_GRID";
+            }
+        }
 
         if (request.surveyId() != null && !request.surveyId().isBlank()) {
             try {
@@ -142,11 +156,15 @@ public class QuotationService {
             customerId = leadId;
         }
 
-        if (siteId != null && siteId.length() > 100) {
-            siteId = siteId.substring(siteId.length() - 100);
+        if (siteId != null && siteId.length() > 36) {
+            siteId = siteId.substring(0, 36);
         }
-        if (leadId != null && leadId.length() > 100) {
-            leadId = leadId.substring(leadId.length() - 100);
+        if (leadId != null && leadId.length() > 36) {
+            leadId = leadId.substring(0, 36);
+        }
+        String surveyId = request.surveyId();
+        if (surveyId != null && surveyId.length() > 36) {
+            surveyId = surveyId.substring(0, 36);
         }
 
         var calc = bomEngine.calculateBOM(capacity, propertyType);
@@ -155,7 +173,7 @@ public class QuotationService {
         q.setCustomerId(customerId);
         q.setLeadId(leadId);
         q.setSiteId(siteId);
-        q.setSurveyId(request.surveyId());
+        q.setSurveyId(surveyId);
         q.setCapacityKw(capacity);
         q.setSystemType(systemType);
         q.setQuoteNumber(generateQuoteNumber());
@@ -171,6 +189,69 @@ public class QuotationService {
         calc.items().forEach(q::addItem);
 
         Quotation saved = quotationRepository.save(q);
+        return QuotationResponse.fromEntity(saved);
+    }
+
+    @Transactional
+    public QuotationResponse updateDraftQuotation(String quotationId, Map<String, Object> patch) {
+        Quotation quotation = quotationRepository.findById(quotationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation", quotationId));
+
+        if (quotation.getStatus() != QuotationStatus.DRAFT) {
+            throw new IllegalStateException("Only draft quotations can be edited.");
+        }
+
+        if (patch.containsKey("packageId") && patch.get("packageId") != null) {
+            String pkgId = patch.get("packageId").toString();
+            String[] parts = pkgId.split("-");
+            BigDecimal cap = quotation.getCapacityKw();
+            String sysType = quotation.getSystemType();
+            if (parts.length >= 2) {
+                try { cap = new BigDecimal(parts[1]); } catch (Exception ignored) {}
+            }
+            if (parts.length >= 3) {
+                sysType = "OFF".equalsIgnoreCase(parts[2]) ? "OFF_GRID" : "ON_GRID";
+            }
+            quotation.setCapacityKw(cap);
+            quotation.setSystemType(sysType);
+
+            var calc = bomEngine.calculateBOM(cap, "RESIDENTIAL");
+            quotation.getItems().clear();
+            calc.items().forEach(quotation::addItem);
+            quotation.setBaseAmount(calc.baseAmount());
+            quotation.setGstRate(calc.gstRate());
+            quotation.setGstAmount(calc.gstAmount());
+            quotation.setGrossAmount(calc.grossAmount());
+            quotation.setSubsidyAmount(calc.subsidyAmount());
+            quotation.setNetPayable(calc.netPayable());
+        }
+
+        if (patch.containsKey("qty") && patch.get("qty") instanceof Map<?, ?> qtyMap) {
+            BigDecimal newBase = BigDecimal.ZERO;
+            for (QuotationItem item : quotation.getItems()) {
+                Object val = qtyMap.get(item.getId());
+                if (val == null) {
+                    val = qtyMap.get(item.getProductId());
+                }
+                if (val != null) {
+                    try {
+                        BigDecimal q = new BigDecimal(val.toString());
+                        if (q.compareTo(BigDecimal.ZERO) >= 0) {
+                            item.setQuantity(q);
+                            item.setTotalPrice(q.multiply(item.getUnitPrice()));
+                        }
+                    } catch (Exception ignored) {}
+                }
+                newBase = newBase.add(item.getTotalPrice());
+            }
+            quotation.setBaseAmount(newBase);
+            BigDecimal gst = newBase.multiply(quotation.getGstRate()).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            quotation.setGstAmount(gst);
+            quotation.setGrossAmount(newBase.add(gst));
+            quotation.setNetPayable(quotation.getGrossAmount().subtract(quotation.getSubsidyAmount()));
+        }
+
+        Quotation saved = quotationRepository.save(quotation);
         return QuotationResponse.fromEntity(saved);
     }
 

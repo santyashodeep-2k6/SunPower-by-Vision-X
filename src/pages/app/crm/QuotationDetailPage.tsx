@@ -6,6 +6,7 @@ import { CATEGORY_ORDER, PACKAGES, computeTotals } from "@/lib/catalog"
 import { fmtDate, inr } from "@/lib/format"
 import { quotationHtml } from "@/lib/documents"
 import { useDb } from "@/data/store"
+import { hydrate } from "@/services/core"
 import {
   acceptQuotation,
   convertToSalesOrder,
@@ -33,7 +34,7 @@ export default function QuotationDetailPage() {
   const db = useDb()
   const navigate = useNavigate()
   const { run, fire, pending } = useAction()
-  const quote = db.quotations.find((q) => q.id === id)
+  const quote = db.quotations.find((q) => q.id === id || (q as any).quoteNumber === id)
   const [qty, setQty] = useState<Record<string, string>>({})
   const [modal, setModal] =
     useState<null | "preview" | "reject" | "accept" | "convert">(null)
@@ -42,6 +43,12 @@ export default function QuotationDetailPage() {
     method: Payment["method"]
     reference: string
   }>({ amount: "", method: "UPI", reference: "" })
+
+  useEffect(() => {
+    if (!quote && id) {
+      hydrate()
+    }
+  }, [quote, id])
   useEffect(() => {
     setQty({})
   }, [quote?.packageId, quote?.status])
@@ -248,7 +255,7 @@ export default function QuotationDetailPage() {
               <label className="flex items-center gap-2 text-[13px] text-muted">
                 Package
                 <select
-                  value={quote.packageId}
+                  value={PACKAGES.some((p) => p.id === quote.packageId) ? quote.packageId : (PACKAGES.find((p) => p.capacity === quote.capacity && p.systemType === quote.systemType)?.id || PACKAGES[2].id)}
                   onChange={(e) =>
                     fire(
                       "pkg",

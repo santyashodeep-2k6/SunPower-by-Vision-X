@@ -214,10 +214,95 @@ export function normalizeDb(data: DemoDB): DemoDB {
     }
   }
   // Normalize quotations and ensure quotation customers are registered
-  next.quotations = (next.quotations || []).map((q: any) => ({
-    ...q,
-    items: Array.isArray(q.items) ? q.items : [],
-  }))
+  next.quotations = (next.quotations || []).map((q: any) => {
+    const rawCap = Number(q.capacity ?? q.capacityKw ?? 3)
+    const capacity = Number.isFinite(rawCap) && rawCap > 0 ? rawCap : 3
+    const rawType = String(q.systemType || "On-Grid").toUpperCase()
+    const systemType = rawType.includes("OFF") ? "Off-Grid" : "On-Grid"
+    const packageId = q.packageId || `PKG-${capacity}-${systemType === "On-Grid" ? "ON" : "OFF"}`
+    const labour = Number(q.labour ?? 15000)
+    const otherCharges = Number(q.otherCharges ?? 5000)
+
+    const rawItems = Array.isArray(q.items) ? q.items : []
+    const items = rawItems.map((i: any) => {
+      const catRaw = String(i.category || "").toUpperCase()
+      const desc = String(i.description || i.itemName || i.name || "Solar Component")
+      let cat = "Protection"
+      if (catRaw === "MODULE" || catRaw === "PANEL" || desc.toLowerCase().includes("module") || desc.toLowerCase().includes("panel")) {
+        cat = "Panel"
+      } else if (catRaw === "INVERTER" || desc.toLowerCase().includes("inverter")) {
+        cat = "Inverter"
+      } else if (catRaw === "BATTERY" || desc.toLowerCase().includes("battery")) {
+        cat = "Battery"
+      } else if (catRaw === "STRUCTURE" || desc.toLowerCase().includes("mounting") || desc.toLowerCase().includes("structure")) {
+        cat = "Structure"
+      } else if (desc.toLowerCase().includes("cable")) {
+        cat = "Cable"
+      } else if (desc.toLowerCase().includes("earthing") || desc.toLowerCase().includes("grounding")) {
+        cat = "Earthing"
+      } else if (desc.toLowerCase().includes("connector")) {
+        cat = "Connector"
+      }
+
+      const qty = Number(i.qty ?? i.quantity ?? 1)
+      const unitPrice = Number(i.unitPrice ?? 0)
+      const unit = i.unit || (cat === "Panel" ? "nos" : cat === "Inverter" ? "set" : cat === "Structure" ? "kW" : cat === "Cable" ? "m" : "nos")
+      return {
+        id: String(i.id || uid()),
+        productId: String(i.productId || ""),
+        description: desc,
+        category: cat,
+        qty: Number.isFinite(qty) ? qty : 1,
+        unit,
+        unitPrice: Number.isFinite(unitPrice) ? unitPrice : 0,
+      }
+    })
+
+    const equipment = items.reduce((sum: number, it: any) => sum + it.qty * it.unitPrice, 0)
+    const equipmentTax = Number(q.totals?.equipmentTax ?? Math.round(equipment * 0.138))
+    const serviceTax = Number(q.totals?.serviceTax ?? Math.round((labour + otherCharges) * 0.18))
+    const total = Number(q.totals?.total ?? q.grossAmount ?? (equipment + labour + otherCharges + equipmentTax + serviceTax))
+    const advance = Number(q.totals?.advance ?? Math.round((total * 0.1) / 100) * 100)
+    const balance = Number(q.totals?.balance ?? (total - advance))
+
+    const totals = {
+      equipment: Number(q.totals?.equipment ?? equipment),
+      labour,
+      other: otherCharges,
+      equipmentTax,
+      serviceTax,
+      total,
+      advance,
+      balance,
+    }
+
+    const stRaw = String(q.status || "Draft").toUpperCase()
+    let status = "Draft"
+    if (stRaw === "SENT") status = "Sent"
+    else if (stRaw.includes("AWAIT") || stRaw.includes("PENDING")) status = "Awaiting Response"
+    else if (stRaw === "ACCEPTED" || stRaw === "WON") status = "Accepted"
+    else if (stRaw === "REJECTED" || stRaw === "LOST") status = "Rejected"
+    else if (stRaw === "EXPIRED") status = "Expired"
+
+    const createdAt = q.createdAt || new Date().toISOString()
+    const validUntil = q.validUntil || new Date(new Date(createdAt).getTime() + 15 * 86400000).toISOString()
+
+    return {
+      ...q,
+      id: String(q.id || q.quoteNumber),
+      quoteNumber: q.quoteNumber || q.id,
+      capacity,
+      systemType,
+      packageId,
+      items,
+      labour,
+      otherCharges,
+      totals,
+      status,
+      createdAt,
+      validUntil,
+    }
+  })
 
   for (const q of next.quotations) {
     const custId = q.customerId || q.leadId

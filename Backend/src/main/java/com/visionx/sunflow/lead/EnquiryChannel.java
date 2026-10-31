@@ -1,21 +1,11 @@
 package com.visionx.sunflow.lead;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum EnquiryChannel {
     WEB_FORM,
     WHATSAPP,
     VOICE;
-
-    @JsonValue
-    public String toJson() {
-        return switch (this) {
-            case WEB_FORM -> "Website";
-            case WHATSAPP -> "WhatsApp";
-            case VOICE -> "Voice";
-        };
-    }
 
     @JsonCreator
     public static EnquiryChannel fromString(String value) {

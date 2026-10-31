@@ -82,8 +82,8 @@ export default function QuotationsPage() {
       key: "total",
       header: "Final amount",
       align: "right",
-      sortValue: (r) => r.x.totals.total,
-      render: (r) => inr(r.x.totals.total),
+      sortValue: (r) => r.x.totals?.total ?? 0,
+      render: (r) => inr(r.x.totals?.total ?? 0),
     },
     {
       key: "valid",

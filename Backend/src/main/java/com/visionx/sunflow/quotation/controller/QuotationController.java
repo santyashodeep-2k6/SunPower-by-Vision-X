@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * =============================================================================
@@ -43,6 +44,16 @@ public class QuotationController {
     @Operation(summary = "Generate quotation with automatic BOM and PM Surya Ghar subsidy calculation")
     public ResponseEntity<QuotationResponse> createQuotation(@Valid @RequestBody QuotationCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(quotationService.createQuotation(request));
+    }
+
+    @PatchMapping("/{id}")
+    @PutMapping("/{id}")
+    @Operation(summary = "Update draft quotation (change package or adjust item quantities)")
+    public ResponseEntity<QuotationResponse> updateDraftQuotation(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> patch
+    ) {
+        return ResponseEntity.ok(quotationService.updateDraftQuotation(id, patch));
     }
 
     @GetMapping("/{id}")
@@ -79,7 +90,7 @@ public class QuotationController {
     @Operation(summary = "Customer rejects quotation")
     public ResponseEntity<QuotationResponse> rejectQuotation(
             @PathVariable String id,
-            @RequestBody(required = false) java.util.Map<String, String> body
+            @RequestBody(required = false) Map<String, String> body
     ) {
         String reason = body != null ? body.get("reason") : null;
         return ResponseEntity.ok(quotationService.rejectQuotation(id, reason));
@@ -89,7 +100,7 @@ public class QuotationController {
     @Operation(summary = "Convert accepted quotation into sales order with advance payment")
     public ResponseEntity<com.visionx.sunflow.order.dto.OrderResponse> convertToSalesOrder(
             @PathVariable String id,
-            @RequestBody(required = false) java.util.Map<String, Object> advance
+            @RequestBody(required = false) Map<String, Object> advance
     ) {
         QuotationResponse q = quotationService.getQuotationById(id);
         quotationService.acceptQuotation(id);
@@ -134,4 +145,3 @@ public class QuotationController {
         return ResponseEntity.ok(bomEngine.calculateBOM(capacityKw, propertyType));
     }
 }
-

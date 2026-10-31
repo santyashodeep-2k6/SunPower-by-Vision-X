@@ -1,14 +1,12 @@
 package com.visionx.sunflow.survey;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum SurveyFeasibility {
     FEASIBLE,
     FEASIBLE_WITH_CONDITIONS,
     NOT_FEASIBLE;
 
-    @JsonValue
     public String toJson() {
         return switch (this) {
             case FEASIBLE -> "Feasible";

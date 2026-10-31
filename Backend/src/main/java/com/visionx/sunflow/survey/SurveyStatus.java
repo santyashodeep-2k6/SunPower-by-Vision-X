@@ -1,7 +1,6 @@
 package com.visionx.sunflow.survey;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum SurveyStatus {
     SCHEDULED,
@@ -11,18 +10,6 @@ public enum SurveyStatus {
     REJECTED,
     CANCELLED,
     RESCHEDULED;
-
-    @JsonValue
-    public String toJson() {
-        return switch (this) {
-            case SCHEDULED -> "Scheduled";
-            case IN_PROGRESS -> "In Progress";
-            case COMPLETED -> "Pending Approval";
-            case APPROVED -> "Approved";
-            case REJECTED, CANCELLED -> "Rejected";
-            case RESCHEDULED -> "Revisit Requested";
-        };
-    }
 
     @JsonCreator
     public static SurveyStatus fromString(String value) {

@@ -58,6 +58,13 @@ public record QuotationResponse(
         return date.plus(java.time.Duration.ofDays(15)).toString();
     }
 
+    @JsonProperty("packageId")
+    public String packageId() {
+        int cap = capacityKw != null ? capacityKw.intValue() : 3;
+        String type = systemType != null && systemType.contains("OFF") ? "OFF" : "ON";
+        return "PKG-" + cap + "-" + type;
+    }
+
     @JsonProperty("totals")
     public Map<String, Object> totals() {
         Map<String, Object> t = new HashMap<>();
@@ -67,13 +74,21 @@ public record QuotationResponse(
         double total = grossAmount != null ? grossAmount.doubleValue() : (subtotal + gst);
         double subsidy = subsidyAmount != null ? subsidyAmount.doubleValue() : 78000.0;
         double net = netPayable != null ? netPayable.doubleValue() : (total - subsidy);
+        double equipmentTax = Math.round(equipment * 0.138);
+        double serviceTax = Math.round(20000.0 * 0.18);
+        double advance = Math.round(total * 0.1 / 100.0) * 100.0;
+        double balance = total - advance;
 
         t.put("equipment", equipment);
         t.put("labour", 15000.0);
         t.put("other", 5000.0);
+        t.put("equipmentTax", equipmentTax);
+        t.put("serviceTax", serviceTax);
         t.put("subtotal", subtotal);
         t.put("gst", gst);
         t.put("total", total);
+        t.put("advance", advance);
+        t.put("balance", balance);
         t.put("subsidy", subsidy);
         t.put("netPayable", net);
         return t;
