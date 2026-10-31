@@ -14,7 +14,13 @@ const SESSION_KEY = "sunflow360.session"
 
 function emptyDb(): DemoDB {
   const seed = buildSeed()
-  const keep: (keyof DemoDB)[] = ["version", "settings", "products", "suppliers"]
+  const keep: (keyof DemoDB)[] = [
+    "version",
+    "settings",
+    "products",
+    "suppliers",
+    "users",
+  ]
   return Object.fromEntries(
     Object.entries(seed).map(([k, v]) => [
       k,

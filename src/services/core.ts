@@ -1,6 +1,7 @@
-import type { AppNotification, DemoDB, Role } from "@/lib/types"
+import type { AppNotification, DemoDB, Role, User } from "@/lib/types"
 import { uid } from "@/lib/format"
 import { getDb, getSession, mutate, replaceDb } from "@/data/store"
+import { USERS } from "@/data/seed"
 import { ApiError, apiRequest, isDemoMode, type HttpMethod } from "./apiClient"
 
 export interface Endpoint {
@@ -202,6 +203,49 @@ export function normalizeDb(data: DemoDB): DemoDB {
     ...t,
     photos: Array.isArray(t.photos) ? t.photos : [],
   }))
+
+  // Normalize and enrich staff/sales users
+  const rawUsers = (next.users || []).map((u: any) => {
+    const roleStr = String(u.role || "sales").toLowerCase()
+    const role = (
+      roleStr.includes("sales")
+        ? "sales"
+        : roleStr.includes("admin")
+          ? "admin"
+          : roleStr.includes("survey")
+            ? "surveyor"
+            : roleStr.includes("invent")
+              ? "inventory"
+              : roleStr.includes("install")
+                ? "installer"
+                : roleStr.includes("serv")
+                  ? "service"
+                  : "sales"
+    ) as Exclude<Role, "customer">
+    return {
+      id: String(u.id),
+      name: u.fullName || u.name || "Sales Executive",
+      role,
+      title:
+        u.title ||
+        (role === "sales"
+          ? "Solar Sales Consultant"
+          : role === "admin"
+            ? "Director & Administrator"
+            : "Staff"),
+      phone: u.phone || "9822000000",
+      email: u.email || "sales@sunflow360.com",
+      active: u.active ?? true,
+    }
+  })
+  const userMap = new Map<string, User>()
+  for (const u of USERS) {
+    userMap.set(u.id, u)
+  }
+  for (const u of rawUsers) {
+    userMap.set(u.id, u)
+  }
+  next.users = Array.from(userMap.values())
 
   return next
 }
