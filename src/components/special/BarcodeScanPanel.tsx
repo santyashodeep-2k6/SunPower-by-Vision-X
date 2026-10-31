@@ -21,7 +21,7 @@ export function BarcodeScanPanel({
 }) {
   const [value, setValue] = useState("")
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<{ ok: boolean text: string } | null>(
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(
     null,
   )
   const input = useRef<HTMLInputElement>(null)

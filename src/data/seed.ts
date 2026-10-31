@@ -1103,7 +1103,7 @@ export function buildSeed(): DemoDB {
 
   const receivePO = (
     supplierId: string,
-    lines: { productId: string qty: number }[],
+    lines: { productId: string; qty: number }[],
     daysAgo: number,
     reason: string,
   ) => {

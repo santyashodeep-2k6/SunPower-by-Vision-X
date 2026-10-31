@@ -1,42 +1,22 @@
 import { useState } from "react"
-
 import type { ChatMessage as Msg } from "@/lib/types"
-
 import { fmtTime } from "@/lib/format"
-
-import {
-  Check,
-  Copy,
-  Headset,
-  Sparkles,
-  Sun,
-  Volume2,
-  VolumeX,
-} from "lucide-react"
-
+import { Check, Copy, Headset, Sparkles, Sun, Volume2, VolumeX } from "lucide-react"
 import { SolarEstimateCard } from "./SolarEstimateCard"
 
 // Simple markdown formatter for clean bullet points, bold text and highlights
-
-function FormattedText({ text, isDark }: { text: string isDark: boolean }) {
+function FormattedText({ text, isDark }: { text: string; isDark: boolean }) {
   const lines = text.split("\n")
 
   return (
     <div className="space-y-1.5 leading-relaxed">
       {lines.map((line, idx) => {
         const trimmed = line.trim()
-
         if (!trimmed) return <div key={idx} className="h-1.5" />
 
         // Bullet point
-
-        if (
-          trimmed.startsWith("- ") ||
-          trimmed.startsWith("* ") ||
-          trimmed.startsWith("• ")
-        ) {
+        if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
           const content = trimmed.replace(/^[-*•]\s+/, "")
-
           return (
             <div key={idx} className="flex items-start gap-2 pl-1">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald" />
@@ -46,17 +26,11 @@ function FormattedText({ text, isDark }: { text: string isDark: boolean }) {
         }
 
         // Numbered list (e.g. 1. 2.)
-
         const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/)
-
         if (numMatch) {
           return (
             <div key={idx} className="flex items-start gap-2 pl-1">
-              <span
-                className={`shrink-0 text-[12px] font-bold ${
-                  isDark ? "text-sunshine" : "text-emerald"
-                }`}
-              >
+              <span className={`shrink-0 text-[12px] font-bold ${isDark ? "text-sunshine" : "text-emerald"}`}>
                 {numMatch[1]}.
               </span>
               <span>{formatInline(numMatch[2], isDark)}</span>
@@ -72,23 +46,15 @@ function FormattedText({ text, isDark }: { text: string isDark: boolean }) {
 
 function formatInline(str: string, isDark: boolean) {
   // Parse **bold** and `code/chips`
-
   const parts = str.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong
-          key={i}
-          className={`font-semibold ${
-            isDark ? "text-sunshine" : "text-emerald-700"
-          }`}
-        >
+        <strong key={i} className={`font-semibold ${isDark ? "text-sunshine" : "text-emerald-700"}`}>
           {part.slice(2, -2)}
         </strong>
       )
     }
-
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
         <span
@@ -101,39 +67,28 @@ function formatInline(str: string, isDark: boolean) {
         </span>
       )
     }
-
     return part
   })
 }
 
 export function ChatMessage({
   message,
-
   tone = "light",
-
   onAction,
 }: {
   message: Msg
-
   tone?: "light" | "dark"
-
   onAction?: (actionText: string) => void
 }) {
   const mine = message.from === "customer"
-
   const agent = message.from === "agent"
-
   const isDark = tone === "dark"
-
   const [copied, setCopied] = useState(false)
-
   const [speaking, setSpeaking] = useState(false)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text)
-
     setCopied(true)
-
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -142,26 +97,17 @@ export function ChatMessage({
 
     if (speaking) {
       window.speechSynthesis.cancel()
-
       setSpeaking(false)
-
       return
     }
 
     window.speechSynthesis.cancel()
-
     const utterance = new SpeechSynthesisUtterance(message.text)
-
     utterance.rate = 1.05
-
     utterance.pitch = 1.0
-
     utterance.onend = () => setSpeaking(false)
-
     utterance.onerror = () => setSpeaking(false)
-
     setSpeaking(true)
-
     window.speechSynthesis.speak(utterance)
   }
 
@@ -290,7 +236,6 @@ export function TypingIndicator({
   tone?: "light" | "dark"
 }) {
   const isDark = tone === "dark"
-
   return (
     <div
       className="flex items-end gap-2.5"
@@ -298,10 +243,7 @@ export function TypingIndicator({
       aria-label="Assistant is typing"
     >
       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald to-botanical text-white shadow-sm">
-        <Sun
-          className="h-4 w-4 text-sunshine animate-spin"
-          style={{ animationDuration: "10s" }}
-        />
+        <Sun className="h-4 w-4 text-sunshine animate-spin" style={{ animationDuration: "10s" }} />
       </span>
       <div
         className={`flex items-center gap-1.5 rounded-[22px] rounded-bl-sm px-4.5 py-3 ${
@@ -310,9 +252,7 @@ export function TypingIndicator({
             : "border border-forest/8 bg-white shadow-sm"
         }`}
       >
-        <span className="text-[12px] font-medium mr-1.5 text-muted">
-          Thinking
-        </span>
+        <span className="text-[12px] font-medium mr-1.5 text-muted">Thinking</span>
         {[0, 1, 2].map((i) => (
           <span
             key={i}

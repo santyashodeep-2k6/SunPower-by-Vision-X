@@ -13,7 +13,7 @@ export function PageHeader({
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
-  back?: { to: string label: string }
+  back?: { to: string; label: string }
   eyebrow?: ReactNode
   badges?: ReactNode
 }) {
@@ -54,7 +54,7 @@ export function PageHeader({
 export function Breadcrumb({
   items,
 }: {
-  items: { label: string to?: string }[]
+  items: { label: string; to?: string }[]
 }) {
   return (
     <nav aria-label="Breadcrumb" className="min-w-0">

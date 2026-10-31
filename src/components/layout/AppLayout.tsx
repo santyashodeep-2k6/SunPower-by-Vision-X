@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-
 import {
   Link,
   Navigate,
@@ -8,7 +7,6 @@ import {
   useLocation,
   useNavigate,
 } from "react-router"
-
 import {
   Bell,
   ChevronDown,
@@ -23,11 +21,8 @@ import {
   Users2,
   X,
 } from "lucide-react"
-
 import type { Role } from "@/lib/types"
-
 import { useDb, useSession } from "@/data/store"
-
 import {
   NAV_ITEMS,
   ROLE_LABEL,
@@ -35,73 +30,51 @@ import {
   canAccess,
   homeFor,
 } from "@/app/navigation"
-
 import { defaultPortalCustomer, signInAsRole, signOut } from "@/app/session"
-
 import { setSession } from "@/data/store"
-
 import { stockOf } from "@/lib/rules"
-
 import { relative } from "@/lib/format"
-
 import { markNotificationsRead } from "@/services/admin"
-
 import { isDemoMode } from "@/services/apiClient"
-
 import { Logo } from "@/components/Logo"
-
 import { Avatar, DemoBadge, EmptyState } from "@/components/ui/feedback"
-
 import { DropdownMenu } from "@/components/ui/overlays"
-
 import { ButtonLink } from "@/components/ui/Button"
-
 import { Breadcrumb } from "./PageHeader"
 
 const SIDEBAR_W = "lg:w-[268px]"
 
 function useNavCounts() {
   const db = useDb()
-
   return useMemo(
     () =>
       ({
         "/app/leads": db.leads.filter((l) => l.status === "New").length,
-
         "/app/conversations": db.conversations.filter(
           (c) => c.status === "Needs Human",
         ).length,
-
         "/app/surveys": db.surveys.filter(
           (s) => s.status === "Pending Approval",
         ).length,
-
         "/app/orders": db.salesOrders.filter((s) =>
           ["Confirmed", "Awaiting Stock"].includes(s.status),
         ).length,
-
         "/app/inventory": db.products.filter((p) => stockOf(db, p.id).low)
           .length,
-
         "/app/dispatches": db.dispatches.filter((d) => d.status !== "Delivered")
           .length,
-
         "/app/service-tickets": db.serviceTickets.filter(
           (t) => t.status !== "Closed",
         ).length,
       }) as Record<string, number>,
-
     [db],
   )
 }
 
-function Sidebar({ role, onNavigate }: { role: Role onNavigate?: () => void }) {
+function Sidebar({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
   const counts = useNavCounts()
-
   const items = NAV_ITEMS.filter((n) => n.roles.includes(role))
-
   const groups = [...new Set(items.map((i) => i.group))]
-
   return (
     <div className="glass-sidebar flex h-full flex-col text-white">
       <div className="flex h-16 items-center px-5">
@@ -118,9 +91,7 @@ function Sidebar({ role, onNavigate }: { role: Role onNavigate?: () => void }) {
             </p>
             <ul className="space-y-0.5">
               {items
-
                 .filter((i) => i.group === g)
-
                 .map((i) => (
                   <li key={i.to}>
                     <NavLink
@@ -195,33 +166,22 @@ function Sidebar({ role, onNavigate }: { role: Role onNavigate?: () => void }) {
 
 function useBreadcrumb() {
   const { pathname } = useLocation()
-
   const parts = pathname.split("/").filter(Boolean)
-
   return parts
-
     .slice(1)
-
     .map((p, i) => ({
       label: SEGMENT_LABEL[p] ?? decodeURIComponent(p),
-
       to: "/" + parts.slice(0, i + 2).join("/"),
     }))
 }
 
 function GlobalSearch({ role }: { role: Role }) {
   const db = useDb()
-
   const navigate = useNavigate()
-
   const [q, setQ] = useState("")
-
   const [open, setOpen] = useState(false)
-
   const ref = useRef<HTMLDivElement>(null)
-
   const inputRef = useRef<HTMLInputElement>(null)
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (
@@ -231,115 +191,78 @@ function GlobalSearch({ role }: { role: Role }) {
         )
       ) {
         e.preventDefault()
-
         inputRef.current?.focus()
       }
     }
-
     const onDown = (e: MouseEvent) =>
       !ref.current?.contains(e.target as Node) && setOpen(false)
-
     document.addEventListener("keydown", onKey)
-
     document.addEventListener("mousedown", onDown)
-
     return () => {
       document.removeEventListener("keydown", onKey)
-
       document.removeEventListener("mousedown", onDown)
     }
   }, [])
-
   const results = useMemo(() => {
     const s = q.trim().toLowerCase()
-
     if (s.length < 2) return []
-
-    const out: { label: string sub: string to: string kind: string }[] = []
-
+    const out: { label: string; sub: string; to: string; kind: string }[] = []
     for (const l of db.leads) {
       const c = db.customers.find((x) => x.id === l.customerId)
-
       if (`${l.id} ${c?.name} ${c?.phone}`.toLowerCase().includes(s))
         out.push({
           kind: "Lead",
-
           label: c?.name ?? l.id,
-
           sub: `${l.id} · ${l.status}`,
-
           to: `/app/leads/${l.id}`,
         })
     }
-
     for (const i of db.installations) {
       const c = db.customers.find((x) => x.id === i.customerId)
-
       if (`${i.reference} ${i.id} ${c?.name}`.toLowerCase().includes(s))
         out.push({
           kind: "Installation",
-
           label: i.reference,
-
           sub: `${c?.name} · ${i.capacity} kW ${i.systemType}`,
-
           to: `/app/installations/${i.id}`,
         })
     }
-
     for (const u of db.units)
       if (u.serial.toLowerCase().includes(s))
         out.push({
           kind: "Serial",
-
           label: u.serial,
-
           sub: `${db.products.find((p) => p.id === u.productId)?.name} · ${u.status}`,
-
           to: u.installationId
             ? `/app/installations/${u.installationId}`
             : `/app/inventory?tab=serials&q=${u.serial}`,
         })
-
     for (const t of db.serviceTickets)
       if (`${t.id} ${t.issue}`.toLowerCase().includes(s))
         out.push({
           kind: "Ticket",
-
           label: t.id,
-
           sub: t.issue,
-
           to: `/app/service-tickets/${t.id}`,
         })
-
     for (const qt of db.quotations)
       if (qt.id.toLowerCase().includes(s))
         out.push({
           kind: "Quotation",
-
           label: qt.id,
-
           sub: `${qt.capacity} kW ${qt.systemType} · ${qt.status}`,
-
           to: `/app/quotations/${qt.id}`,
         })
-
     for (const so of db.salesOrders)
       if (so.id.toLowerCase().includes(s))
         out.push({
           kind: "Order",
-
           label: so.id,
-
           sub: so.status,
-
           to: `/app/orders/${so.id}`,
         })
-
     return out.filter((r) => canAccess(role, r.to.split("?")[0])).slice(0, 8)
   }, [q, db, role])
-
   return (
     <div ref={ref} className="relative hidden w-full max-w-xs md:block">
       <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -349,7 +272,6 @@ function GlobalSearch({ role }: { role: Role }) {
         value={q}
         onChange={(e) => {
           setQ(e.target.value)
-
           setOpen(true)
         }}
         onFocus={() => setOpen(true)}
@@ -373,9 +295,7 @@ function GlobalSearch({ role }: { role: Role }) {
                 type="button"
                 onClick={() => {
                   navigate(r.to)
-
                   setOpen(false)
-
                   setQ("")
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-forest/6"
@@ -402,40 +322,25 @@ function GlobalSearch({ role }: { role: Role }) {
 
 export function NotificationPanel({ role }: { role: Role }) {
   const db = useDb()
-
   const navigate = useNavigate()
-
   const [open, setOpen] = useState(false)
-
   const ref = useRef<HTMLDivElement>(null)
-
   const items = db.notifications
-
     .filter((n) => n.roles.includes(role))
-
     .slice(0, 20)
-
   const unread = items.filter((n) => !n.read)
-
   useEffect(() => {
     if (!open) return
-
     const onDown = (e: MouseEvent) =>
       !ref.current?.contains(e.target as Node) && setOpen(false)
-
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false)
-
     document.addEventListener("mousedown", onDown)
-
     document.addEventListener("keydown", onKey)
-
     return () => {
       document.removeEventListener("mousedown", onDown)
-
       document.removeEventListener("keydown", onKey)
     }
   }, [open])
-
   return (
     <div ref={ref} className="relative">
       <button
@@ -475,9 +380,7 @@ export function NotificationPanel({ role }: { role: Role }) {
                   type="button"
                   onClick={() => {
                     markNotificationsRead([n.id])
-
                     setOpen(false)
-
                     navigate(n.link)
                   }}
                   className="flex w-full gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-forest/5"
@@ -512,45 +415,28 @@ export function NotificationPanel({ role }: { role: Role }) {
 
 export function ProfileMenu() {
   const db = useDb()
-
   const session = useSession()
-
   const navigate = useNavigate()
-
   if (!session) return null
-
   const user = db.users.find((u) => u.id === session.userId)
-
   const customer = db.customers.find((c) => c.id === session.customerId)
-
   const name = user?.name ?? customer?.name ?? "Guest"
-
   const switchTo = (role: Role) => {
     if (role === "customer") {
       const c = defaultPortalCustomer()
-
       setSession({ role: "customer", customerId: c.id })
     } else signInAsRole(role)
-
     navigate(homeFor(role))
   }
-
   const roles: Role[] = [
     "admin",
-
     "sales",
-
     "surveyor",
-
     "inventory",
-
     "installer",
-
     "service",
-
     "customer",
   ]
-
   return (
     <DropdownMenu
       width="w-72"
@@ -568,46 +454,33 @@ export function ProfileMenu() {
       items={[
         ...roles.map((r) => ({
           label: `${ROLE_LABEL[r]}${r === session.role ? " (current)" : ""}`,
-
           icon:
             r === "customer" ? (
               <UserRound className="h-4 w-4" />
             ) : (
               <Users2 className="h-4 w-4" />
             ),
-
           onSelect: () => switchTo(r),
-
           disabled: r === session.role,
         })),
-
         ...(session.role !== "customer"
           ? [
               {
                 label: "Settings",
-
                 icon: <SettingsIcon className="h-4 w-4" />,
-
                 onSelect: () => navigate("/app/settings"),
               },
             ]
           : []),
-
         {
           label: "Public website",
-
           icon: <ExternalLink className="h-4 w-4" />,
-
           onSelect: () => navigate("/"),
         },
-
         {
           label: "Sign out",
-
           icon: <LogOut className="h-4 w-4" />,
-
           danger: true,
-
           onSelect: () => (signOut(), navigate("/")),
         },
       ]}
@@ -658,17 +531,12 @@ function NoAccess({ role }: { role: Role }) {
 
 export function AppLayout() {
   const session = useSession()
-
   const location = useLocation()
-
   const crumbs = useBreadcrumb()
-
   const [mobileOpen, setMobileOpen] = useState(false)
-
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
-
   if (!session)
     return (
       <Navigate
@@ -676,11 +544,8 @@ export function AppLayout() {
         replace
       />
     )
-
   if (session.role === "customer") return <Navigate to="/portal" replace />
-
   const allowed = canAccess(session.role, location.pathname)
-
   return (
     <div className="app-canvas min-h-svh">
       <a

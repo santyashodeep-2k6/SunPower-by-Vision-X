@@ -13,7 +13,6 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react"
-
 import {
   AlertCircle,
   Check,
@@ -23,24 +22,19 @@ import {
   Trash2,
   Upload,
 } from "lucide-react"
-
 import type { Photo } from "@/lib/types"
-
 import { uid } from "@/lib/format"
 
 /* =============================== Primitives =============================== */
 
 export function ValidationMessage({
   id,
-
   children,
 }: {
   id?: string
-
   children?: ReactNode
 }) {
   if (!children) return null
-
   return (
     <p
       id={id}
@@ -54,56 +48,36 @@ export function ValidationMessage({
 }
 
 /** Label + control + hint/error. Injects id/aria props into a single child control. */
-
 export function FormField({
   label,
-
   required,
-
   hint,
-
   error,
-
   children,
-
   className = "",
-
   optional,
 }: {
   label: ReactNode
-
   required?: boolean
-
   optional?: boolean
-
   hint?: ReactNode
-
   error?: string
-
   children: ReactNode
-
   className?: string
 }) {
   const id = useId()
-
   const errId = `${id}-err`
-
   const hintId = `${id}-hint`
-
   const control = isValidElement(children)
     ? cloneElement(children as ReactElement<Record<string, unknown>>, {
         id,
-
         "aria-invalid": error ? true : undefined,
-
         "aria-describedby":
           [error ? errId : "", hint ? hintId : ""].filter(Boolean).join(" ") ||
           undefined,
-
         "aria-required": required || undefined,
       })
     : children
-
   return (
     <div className={className}>
       <label
@@ -142,7 +116,6 @@ export const TextInput =
           <input ref={ref} className={`field pl-9 ${className}`} {...rest} />
         </div>
       )
-
     return <input ref={ref} className={`field ${className}`} {...rest} />
   })
 
@@ -162,22 +135,17 @@ export const TextArea =
 
 export interface Option {
   value: string
-
   label: string
-
   description?: string
-
   disabled?: boolean
 }
 
 export const SelectInput =
   forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & {
     options: (Option | string)[]
-
     placeholder?: string
   }>(function SelectInput(
     { options, placeholder, className = "", ...rest },
-
     ref,
   ) {
     return (
@@ -185,7 +153,6 @@ export const SelectInput =
         {placeholder !== undefined && <option value="">{placeholder}</option>}
         {options.map((o) => {
           const opt = typeof o === "string" ? { value: o, label: o } : o
-
           return (
             <option key={opt.value} value={opt.value} disabled={opt.disabled}>
               {opt.label}
@@ -212,33 +179,21 @@ export const DatePicker =
 
 export function Checkbox({
   checked,
-
   onChange,
-
   label,
-
   description,
-
   disabled,
-
   id,
 }: {
   checked: boolean
-
   onChange: (v: boolean) => void
-
   label: ReactNode
-
   description?: ReactNode
-
   disabled?: boolean
-
   id?: string
 }) {
   const auto = useId()
-
   const cid = id ?? auto
-
   return (
     <label
       htmlFor={cid}
@@ -276,30 +231,19 @@ export function Checkbox({
 }
 
 /** Large selectable cards — used for property type and system type choices. */
-
 export function ChoiceCards<T extends string>({
   value,
-
   onChange,
-
   options,
-
   columns = 3,
-
   name,
-
   invalid,
 }: {
   value?: T
-
   onChange: (v: T) => void
-
-  options: { value: T label: string description?: string icon?: ReactNode }[]
-
+  options: { value: T; label: string; description?: string; icon?: ReactNode }[]
   columns?: 2 | 3
-
   name: string
-
   invalid?: boolean
 }) {
   return (
@@ -313,7 +257,6 @@ export function ChoiceCards<T extends string>({
     >
       {options.map((o) => {
         const active = value === o.value
-
         return (
           <button
             key={o.value}
@@ -357,89 +300,56 @@ export function ChoiceCards<T extends string>({
 
 export function SearchableDropdown({
   options,
-
   value,
-
   onChange,
-
   placeholder = "Search…",
-
   emptyText = "No matches",
-
   id,
-
   disabled,
-
   ...aria
 }: {
   options: Option[]
-
   value?: string
-
   onChange: (v: string) => void
-
   placeholder?: string
-
   emptyText?: string
-
   id?: string
-
   disabled?: boolean
-
   "aria-invalid"?: boolean
 }) {
   const [open, setOpen] = useState(false)
-
   const [q, setQ] = useState("")
-
   const [hi, setHi] = useState(0)
-
   const ref = useRef<HTMLDivElement>(null)
-
   const listId = useId()
-
   const selected = options.find((o) => o.value === value)
-
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
-
     return (
       s
         ? options.filter((o) =>
             `${o.label} ${o.description ?? ""}`.toLowerCase().includes(s),
           )
         : options
-    )
-
-      .slice(0, 50)
+    ).slice(0, 50)
   }, [q, options])
-
   useEffect(() => {
     if (!open) return
-
     const onDown = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false)
     }
-
     document.addEventListener("mousedown", onDown)
-
     return () => document.removeEventListener("mousedown", onDown)
   }, [open])
-
   useEffect(() => {
     setHi(0)
   }, [q])
-
   const pick = (o: Option) => {
     if (o.disabled) return
-
     onChange(o.value)
-
     setOpen(false)
-
     setQ("")
   }
-
   return (
     <div ref={ref} className="relative">
       <div className="relative">
@@ -458,23 +368,18 @@ export function SearchableDropdown({
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             setQ(e.target.value)
-
             setOpen(true)
           }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault()
-
               setOpen(true)
-
               setHi((h) => Math.min(filtered.length - 1, h + 1))
             } else if (e.key === "ArrowUp") {
               e.preventDefault()
-
               setHi((h) => Math.max(0, h - 1))
             } else if (e.key === "Enter" && open && filtered[hi]) {
               e.preventDefault()
-
               pick(filtered[hi])
             } else if (e.key === "Escape") setOpen(false)
           }}
@@ -499,7 +404,6 @@ export function SearchableDropdown({
               onMouseEnter={() => setHi(i)}
               onMouseDown={(e) => {
                 e.preventDefault()
-
                 pick(o)
               }}
               className={`cursor-pointer rounded-xl px-3 py-2 text-sm ${
@@ -529,30 +433,21 @@ export function SearchableDropdown({
 
 export function FormStepper({
   steps,
-
   current,
-
   onStepClick,
-
   completed,
 }: {
   steps: string[]
-
   current: number
-
   completed: number[]
-
   onStepClick?: (i: number) => void
 }) {
   return (
     <ol className="flex items-center gap-2" aria-label="Form progress">
       {steps.map((s, i) => {
         const done = completed.includes(i) && i !== current
-
         const active = i === current
-
         const clickable = !!onStepClick && (done || i < current)
-
         return (
           <li key={s} className="flex min-w-0 flex-1 items-center gap-2">
             <button
@@ -599,45 +494,29 @@ export function FormStepper({
 
 export async function fileToPhoto(
   file: File,
-
   caption?: string,
 ): Promise<Photo> {
   if (!file.type.startsWith("image/"))
     throw new Error(`${file.name} is not an image.`)
-
   if (file.size > 15 * 1024 * 1024)
     throw new Error(`${file.name} is larger than 15 MB.`)
-
   const src = URL.createObjectURL(file)
-
   try {
     const img = await new Promise<HTMLImageElement>((res, rej) => {
       const i = new Image()
-
       i.onload = () => res(i)
-
       i.onerror = () => rej(new Error(`Could not read ${file.name}.`))
-
       i.src = src
     })
-
     const scale = Math.min(1, 720 / Math.max(img.width, img.height))
-
     const canvas = document.createElement("canvas")
-
     canvas.width = Math.round(img.width * scale)
-
     canvas.height = Math.round(img.height * scale)
-
     canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height)
-
     return {
       id: uid(),
-
       url: canvas.toDataURL("image/jpeg", 0.72),
-
       caption: caption ?? file.name.replace(/\.[^.]+$/, ""),
-
       at: new Date().toISOString(),
     }
   } finally {
@@ -647,52 +526,31 @@ export async function fileToPhoto(
 
 export function FileUploader({
   photos = [],
-
   onAdd,
-
   onRemove,
-
   disabled,
-
   samplePhotos,
-
   label = "Upload photographs",
-
   hint = "JPG or PNG, up to 15 MB. Images are compressed in the browser.",
-
   onError,
-
   /** Demo helper: sample image URLs when no camera/files are at hand. */
 }: {
   photos?: Photo[]
-
   onAdd: (p: Photo) => Promise<unknown> | void
-
   onRemove?: (id: string) => Promise<unknown> | void
-
   disabled?: boolean
-
-  samplePhotos?: { url: string caption: string }[]
-
+  samplePhotos?: { url: string; caption: string }[]
   label?: string
-
   hint?: string
-
   onError?: (msg: string) => void
 }) {
   const input = useRef<HTMLInputElement>(null)
-
   const [drag, setDrag] = useState(false)
-
   const [busy, setBusy] = useState(false)
-
   const photoList = Array.isArray(photos) ? photos : []
-
   const handle = async (files: FileList | null) => {
     if (!files?.length) return
-
     setBusy(true)
-
     for (const f of Array.from(files)) {
       try {
         await onAdd(await fileToPhoto(f))
@@ -700,31 +558,24 @@ export function FileUploader({
         onError?.(e instanceof Error ? e.message : "Upload failed")
       }
     }
-
     setBusy(false)
-
     if (input.current) input.current.value = ""
   }
-
   const nextSample = samplePhotos?.find(
     (s) => !photoList.some((p) => p.url === s.url),
   )
-
   return (
     <div>
       {!disabled && (
         <div
           onDragOver={(e) => {
             e.preventDefault()
-
             setDrag(true)
           }}
           onDragLeave={() => setDrag(false)}
           onDrop={(e) => {
             e.preventDefault()
-
             setDrag(false)
-
             handle(e.dataTransfer.files)
           }}
           className={`flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors ${
@@ -765,11 +616,8 @@ export function FileUploader({
               onClick={() =>
                 onAdd({
                   id: uid(),
-
                   url: nextSample.url,
-
                   caption: nextSample.caption,
-
                   at: new Date().toISOString(),
                 })
               }

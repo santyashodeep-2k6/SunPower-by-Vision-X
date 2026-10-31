@@ -141,4 +141,3 @@ This register logs all functional, runtime, visual, and integration defects iden
 - **Fix Applied**: Standardized all script imports to use the `@/` path alias.
 - **Retest Evidence**: Re-running `test-full-integration.ts` passed 52 of 52 tests with 0 failures.
 - **Status**: **RESOLVED**
-

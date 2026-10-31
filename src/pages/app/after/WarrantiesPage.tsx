@@ -185,7 +185,7 @@ export default function WarrantiesPage() {
   )
 }
 
-function WarrantyDrawer({ w, onClose }: { w?: Warranty onClose: () => void }) {
+function WarrantyDrawer({ w, onClose }: { w?: Warranty; onClose: () => void }) {
   const db = useDb()
   const { result } = useWarrantyCheck(w?.serial)
   const repl = w

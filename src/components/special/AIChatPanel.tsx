@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-
 import { Link } from "react-router"
-
 import {
   ArrowUp,
   CheckCircle2,
@@ -15,13 +13,9 @@ import {
   Sparkles,
   X,
 } from "lucide-react"
-
 import type { AssistantFields, Conversation, SolarEstimate } from "@/lib/types"
-
 import { inr } from "@/lib/format"
-
 import { getDb, useDb } from "@/data/store"
-
 import {
   LANGUAGES,
   SLOT_ORDER,
@@ -30,147 +24,99 @@ import {
   newMessage,
   type Slot,
 } from "@/services/assistant"
-
 import {
   newConversationId,
   requestHuman,
   saveConversation,
   submitAssistantEnquiry,
 } from "@/services/crm"
-
 import {
   getGeminiApiKey,
   hasGeminiApiKey,
   setGeminiApiKey,
 } from "@/services/gemini"
-
 import { errorMessage } from "@/services/apiClient"
-
 import { useToast } from "@/components/ui/overlays"
-
 import { ChatMessage, TypingIndicator } from "./ChatMessage"
 
 const STORE_KEY = "sunflow360.assistant"
 
 const FIELD_LABELS: Record<keyof AssistantFields, string> = {
   language: "Preferred language",
-
   name: "Customer name",
-
   phone: "Mobile number",
-
   propertyType: "Property type",
-
   city: "Location",
-
   monthlyBill: "Monthly bill",
-
   roofArea: "Rooftop area",
-
   capacity: "System capacity",
-
   systemType: "On-Grid / Off-Grid",
 }
 
-const ORDER: keyof AssistantFields[] = [
+const ORDER: (keyof AssistantFields)[] = [
   "language",
-
   "name",
-
   "phone",
-
   "propertyType",
-
   "city",
-
   "monthlyBill",
-
   "roofArea",
-
   "capacity",
-
   "systemType",
 ]
 
 export function formatField(k: keyof AssistantFields, v: unknown) {
   if (v === null) return "Not known"
-
   if (v === undefined || v === "") return undefined
-
   if (k === "monthlyBill") return inr(Number(v))
-
   if (k === "roofArea") return `${v} sq ft`
-
   if (k === "capacity") return `${v} kW`
-
   return String(v)
 }
 
 interface Persisted {
   id: string
-
   slot: Slot
-
   quickReplies: string[]
-
-  result?: { leadId: string updated: boolean }
+  result?: { leadId: string; updated: boolean }
 }
 
 function freshConversation(): Conversation {
   const g = assistantService.greet()
-
   const now = new Date().toISOString()
-
   return {
     id: newConversationId(),
-
     channel: "Web Assistant",
-
     language: "English",
-
     status: "Active",
-
     collected: {},
-
     messages: [{ ...newMessage("assistant", g.text) }],
-
     startedAt: now,
-
     updatedAt: now,
   }
 }
 
 export function useAssistant() {
   const db = useDb()
-
   const toast = useToast()
-
   const [meta, setMeta] = useState<Persisted>(() => {
     try {
       const saved = JSON.parse(
         sessionStorage.getItem(STORE_KEY) ?? "null",
       ) as Persisted | null
-
       if (saved && getDb().conversations.some((c) => c.id === saved.id))
         return saved
     } catch {
       /* ignore */
     }
-
     const c = freshConversation()
-
     return {
       id: c.id,
-
       slot: "chat",
-
       quickReplies: [
         "💰 Estimate My Solar Savings",
-
         "🏛️ PM Surya Ghar Subsidy",
-
         "📦 View Products & Prices",
-
         "🔍 Track My Project / Order",
       ],
     }
@@ -181,15 +127,10 @@ export function useAssistant() {
       getDb().conversations.find((c) => c.id === meta.id) ??
       freshConversation(),
   )
-
   const [typing, setTyping] = useState(false)
-
   const [submitting, setSubmitting] = useState(false)
-
   const stored = db.conversations.find((c) => c.id === draft.id)
-
   // Agents can reply from the CRM Conversations module; reflect their messages live here.
-
   const conv =
     stored && stored.messages.length >= draft.messages.length ? stored : draft
 
@@ -199,15 +140,12 @@ export function useAssistant() {
 
   const persist = async (next: Conversation) => {
     setDraft(next)
-
     try {
       await saveConversation(next)
     } catch (e) {
       toast({
         tone: "error",
-
         title: "Conversation not saved",
-
         description: errorMessage(e),
       })
     }
@@ -215,52 +153,36 @@ export function useAssistant() {
 
   const send = async (text: string) => {
     const t = text.trim()
-
     if (!t || typing) return
 
     const withUser: Conversation = {
       ...conv,
-
       messages: [...conv.messages, newMessage("customer", t)],
-
       updatedAt: new Date().toISOString(),
     }
-
     await persist(withUser)
-
     setTyping(true)
 
     try {
       const turn = await assistantService.reply(withUser, meta.slot, t)
-
       const next: Conversation = {
         ...withUser,
-
         collected: turn.collected,
-
         language: turn.collected.language ?? withUser.language,
-
         messages: [
           ...withUser.messages,
-
           newMessage("assistant", turn.text, turn.estimate),
         ],
-
         updatedAt: new Date().toISOString(),
       }
-
       await persist(next)
-
       setMeta((m) => ({
         ...m,
-
         slot: turn.nextSlot,
-
         quickReplies: turn.quickReplies,
       }))
 
       // If booking is complete and required fields are met, save lead to CRM
-
       if (
         turn.nextSlot === "done" &&
         turn.collected.name &&
@@ -268,41 +190,29 @@ export function useAssistant() {
         turn.collected.city
       ) {
         setSubmitting(true)
-
         try {
           const r = await submitAssistantEnquiry(next.id)
-
           setMeta((m) => ({
             ...m,
-
             result: r,
-
             slot: "chat",
-
             quickReplies: [
               "View My Solar Estimate",
-
               "What happens next?",
-
               "Talk to an Advisor",
             ],
           }))
-
           toast({
             tone: "success",
-
             title: r.updated
               ? "Existing enquiry updated"
               : "Site survey & enquiry confirmed!",
-
             description: `Reference ${r.leadId} — our technical advisor will call you shortly.`,
           })
         } catch (e) {
           toast({
             tone: "error",
-
             title: "Enquiry not saved to CRM",
-
             description: errorMessage(e),
           })
         } finally {
@@ -312,9 +222,7 @@ export function useAssistant() {
     } catch (e) {
       toast({
         tone: "error",
-
         title: "Assistant unavailable",
-
         description: errorMessage(e),
       })
     } finally {
@@ -325,36 +233,26 @@ export function useAssistant() {
   const human = async () => {
     try {
       if (!stored) await saveConversation(conv)
-
       await requestHuman(conv.id)
-
       await persist({
         ...getDb().conversations.find((c) => c.id === conv.id)!,
-
         messages: [
           ...conv.messages,
-
           newMessage(
             "assistant",
-
             "I have notified a SunFlow 360 solar advisor. They can see this conversation in the CRM and will join to assist you directly.",
           ),
         ],
       })
-
       toast({
         tone: "success",
-
         title: "An advisor has been notified",
-
         description: "Our team will reply right here in this chat window.",
       })
     } catch (e) {
       toast({
         tone: "error",
-
         title: "Could not reach an advisor",
-
         description: errorMessage(e),
       })
     }
@@ -362,47 +260,32 @@ export function useAssistant() {
 
   const restart = () => {
     const c = freshConversation()
-
     setDraft(c)
-
     setMeta({
       id: c.id,
-
       slot: "chat",
-
       quickReplies: [
         "💰 Estimate My Solar Savings",
-
         "🏛️ PM Surya Ghar Subsidy",
-
         "📦 View Products & Prices",
-
         "🔍 Track My Project / Order",
       ],
-
       result: undefined,
     })
-
     toast({
       tone: "info",
-
       title: "Chat restarted",
-
       description: "Started a fresh conversation session.",
     })
   }
 
   const setLanguage = (lang: string) => {
     const name = languageName(lang)
-
     setDraft({
       ...conv,
-
       language: name,
-
       collected: { ...conv.collected, language: name },
     })
-
     send(`Switch language to ${name}`)
   }
 
@@ -426,7 +309,6 @@ ${ORDER.map(
 CONVERSATION TRANSCRIPT:
 -------------------------------------------
 ${conv.messages
-
   .map(
     (m) =>
       `[${new Date(m.at).toLocaleTimeString()}] ${
@@ -443,23 +325,15 @@ ${
     : ""
 }`,
   )
-
   .join("\n")}
 ===========================================
 `
-
     const blob = new Blob([summary], { type: "text/plain;charset=utf-8" })
-
     const url = URL.createObjectURL(blob)
-
     const a = document.createElement("a")
-
     a.href = url
-
     a.download = `SunFlow-Solar-Chat-${conv.id}.txt`
-
     a.click()
-
     URL.revokeObjectURL(url)
   }
 
@@ -467,43 +341,30 @@ ${
 
   return {
     conv,
-
     meta,
-
     typing,
-
     submitting,
-
     send,
-
     human,
-
     restart,
-
     setLanguage,
-
     downloadTranscript,
-
     progress,
-
     total: ORDER.length,
   }
 }
 
 export function CollectedSummary({
   collected,
-
   tone = "light",
 }: {
   collected: Partial<AssistantFields>
-
   tone?: "light" | "dark"
 }) {
   return (
     <ul className="space-y-2">
       {ORDER.map((k) => {
         const v = formatField(k, collected[k])
-
         return (
           <li
             key={k}
@@ -541,88 +402,62 @@ export function CollectedSummary({
 
 export function AIChatPanel(props: {
   tone?: "light" | "dark"
-
   compact?: boolean
 }) {
   const a = useAssistant()
-
   return <ChatView a={a} {...props} />
 }
 
 export function ChatView({
   a,
-
   tone = "light",
-
   compact = false,
 }: {
   a: ReturnType<typeof useAssistant>
-
   tone?: "light" | "dark"
-
   compact?: boolean
 }) {
   const toast = useToast()
-
   const [text, setText] = useState("")
-
   const [isListening, setIsListening] = useState(false)
-
   const [showReqDrawer, setShowReqDrawer] = useState(false)
-
   const [showKeyModal, setShowKeyModal] = useState(false)
-
   const [geminiKeyInput, setGeminiKeyInput] = useState(
     () => getGeminiApiKey() ?? "",
   )
-
   const [hasKey, setHasKey] = useState(() => hasGeminiApiKey())
-
   const endRef = useRef<HTMLDivElement>(null)
 
   // Critical React 19 fix: Always use function block returning undefined
-
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [a.conv.messages.length, a.typing])
 
   const dark = tone === "dark"
-
   const pct = Math.round((a.progress / a.total) * 100)
 
   // Save or clear Gemini API key
-
   const handleSaveApiKey = () => {
     setGeminiApiKey(geminiKeyInput)
-
     const active = hasGeminiApiKey()
-
     setHasKey(active)
-
     setShowKeyModal(false)
-
     if (active) {
       toast({
         tone: "success",
-
         title: "Gemini API Connected! ✨",
-
-        description:
-          "The chatbot is now powered by Google Gemini generative AI.",
+        description: "The chatbot is now powered by Google Gemini generative AI.",
       })
     } else {
       toast({
         tone: "info",
-
         title: "Using Built-in Solar AI",
-
         description: "Reset to high-precision built-in Solar Knowledge Engine.",
       })
     }
   }
 
   // Voice speech-to-text
-
   const toggleListening = () => {
     if (typeof window === "undefined") return
 
@@ -635,25 +470,20 @@ export function ChatView({
       alert(
         "Voice speech input is not supported in this browser. Please type your message.",
       )
-
       return
     }
 
     if (isListening) {
       setIsListening(false)
-
       return
     }
 
     try {
       const recognition = new SpeechRecognition()
-
       recognition.continuous = false
-
       recognition.interimResults = false
 
       const l = a.conv.language
-
       recognition.lang =
         l === "Hindi"
           ? "hi-IN"
@@ -664,19 +494,14 @@ export function ChatView({
               : "en-IN"
 
       recognition.onstart = () => setIsListening(true)
-
       recognition.onend = () => setIsListening(false)
-
       recognition.onerror = () => setIsListening(false)
-
       recognition.onresult = (e: any) => {
         const spoken = e.results?.[0]?.[0]?.transcript
-
         if (spoken) {
           setText((prev) => (prev ? `${prev} ${spoken}` : spoken))
         }
       }
-
       recognition.start()
     } catch {
       setIsListening(false)
@@ -685,10 +510,7 @@ export function ChatView({
 
   const placeholder = useMemo(() => {
     if (isListening) return "Listening to your voice..."
-
-    if (a.conv.status === "Needs Human")
-      return "Type a message to your advisor..."
-
+    if (a.conv.status === "Needs Human") return "Type a message to your advisor..."
     return "Ask anything about solar, costs, subsidy, or type your bill..."
   }, [isListening, a.conv.status])
 
@@ -809,9 +631,7 @@ export function ChatView({
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm rounded-2xl">
           <div
             className={`w-full max-w-sm rounded-2xl p-5 shadow-2xl ${
-              dark
-                ? "bg-[#103D2D] text-white border border-white/15"
-                : "bg-white text-ink border border-forest/10"
+              dark ? "bg-[#103D2D] text-white border border-white/15" : "bg-white text-ink border border-forest/10"
             }`}
           >
             <div className="flex items-center justify-between mb-3">
@@ -829,9 +649,7 @@ export function ChatView({
             </div>
 
             <p className="text-[12px] text-muted mb-3 leading-relaxed">
-              Enter your Gemini API key to power the chat with live Gemini
-              generative intelligence. If omitted, the assistant operates on the
-              built-in Solar Knowledge & Subsidy Engine.
+              Enter your Gemini API key to power the chat with live Gemini generative intelligence. If omitted, the assistant operates on the built-in Solar Knowledge & Subsidy Engine.
             </p>
 
             <div className="space-y-3">
@@ -862,13 +680,9 @@ export function ChatView({
                     type="button"
                     onClick={() => {
                       setGeminiKeyInput("")
-
                       setGeminiApiKey("")
-
                       setHasKey(false)
-
                       setShowKeyModal(false)
-
                       toast({ tone: "info", title: "Gemini Key Removed" })
                     }}
                     className="text-red-400 hover:underline"
@@ -883,9 +697,7 @@ export function ChatView({
                   type="button"
                   onClick={() => setShowKeyModal(false)}
                   className={`flex-1 h-9 rounded-xl text-[12.5px] font-medium transition ${
-                    dark
-                      ? "bg-white/10 hover:bg-white/15"
-                      : "bg-forest/5 hover:bg-forest/10"
+                    dark ? "bg-white/10 hover:bg-white/15" : "bg-forest/5 hover:bg-forest/10"
                   }`}
                 >
                   Cancel
@@ -995,11 +807,8 @@ export function ChatView({
         className="mt-3 flex items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault()
-
           if (!text.trim() || a.typing) return
-
           a.send(text)
-
           setText("")
         }}
       >
@@ -1066,10 +875,7 @@ export function ChatView({
         <span className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-sunshine" />
           <span>
-            {hasKey
-              ? "Powered by Google Gemini AI"
-              : "Powered by SunFlow AI Solar Advisor"}{" "}
-            · Real-time Estimates
+            {hasKey ? "Powered by Google Gemini AI" : "Powered by SunFlow AI Solar Advisor"} · Real-time Estimates
           </span>
         </span>
 

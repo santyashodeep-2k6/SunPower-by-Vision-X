@@ -28,27 +28,12 @@ function assert(condition: boolean, msg: string) {
 // -------------------------------------------------------------
 console.log("--- Module 1: Store & Database Seeding ---")
 const db = getDb()
-assert(
-  db.customers.length >= 40,
-  `Loaded ${db.customers.length} customer records (>= 40)`,
-)
+assert(db.customers.length >= 40, `Loaded ${db.customers.length} customer records (>= 40)`)
 assert(db.leads.length >= 40, `Loaded ${db.leads.length} leads (>= 40)`)
-assert(
-  db.products.length >= 8,
-  `Loaded ${db.products.length} catalog products (>= 8)`,
-)
-assert(
-  db.suppliers.length >= 4,
-  `Loaded ${db.suppliers.length} approved Tier-1 suppliers (>= 4)`,
-)
-assert(
-  db.users.length >= 6,
-  `Loaded ${db.users.length} staff users across roles (>= 6)`,
-)
-assert(
-  db.warranties.length >= 100,
-  `Loaded ${db.warranties.length} hardware warranties (>= 100)`,
-)
+assert(db.products.length >= 8, `Loaded ${db.products.length} catalog products (>= 8)`)
+assert(db.suppliers.length >= 4, `Loaded ${db.suppliers.length} approved Tier-1 suppliers (>= 4)`)
+assert(db.users.length >= 6, `Loaded ${db.users.length} staff users across roles (>= 6)`)
+assert(db.warranties.length >= 100, `Loaded ${db.warranties.length} hardware warranties (>= 100)`)
 
 // -------------------------------------------------------------
 // MODULE 2: End-to-End CRM Lead Submission
@@ -68,24 +53,12 @@ const enqResult = await submitEnquiry({
   source: "Website",
 })
 
-assert(
-  Boolean(enqResult.leadId),
-  `New Lead generated with ID: ${enqResult.leadId}`,
-)
-assert(
-  Boolean(enqResult.customerId),
-  `Customer entity generated: ${enqResult.customerId}`,
-)
+assert(Boolean(enqResult.leadId), `New Lead generated with ID: ${enqResult.leadId}`)
+assert(Boolean(enqResult.customerId), `Customer entity generated: ${enqResult.customerId}`)
 const freshDb = getDb()
 const createdLead = freshDb.leads.find((l) => l.id === enqResult.leadId)
-assert(
-  createdLead?.status === "New",
-  `Lead initialized in 'New' status (got '${createdLead?.status}')`,
-)
-assert(
-  createdLead?.monthlyBill === 4200,
-  `Lead recorded monthly bill of ₹4,200 (got ${inr(createdLead?.monthlyBill)})`,
-)
+assert(createdLead?.status === "New", `Lead initialized in 'New' status (got '${createdLead?.status}')`)
+assert(createdLead?.monthlyBill === 4200, `Lead recorded monthly bill of ₹4,200 (got ${inr(createdLead?.monthlyBill)})`)
 
 // Duplicate phone check: submitting same phone matches existing customer
 const dupEnq = await submitEnquiry({
@@ -99,76 +72,31 @@ const dupEnq = await submitEnquiry({
   pin: "411038",
   source: "AI Assistant",
 })
-assert(
-  dupEnq.customerId === enqResult.customerId,
-  `Existing customer matched by phone ${testPhone}`,
-)
+assert(dupEnq.customerId === enqResult.customerId, `Existing customer matched by phone ${testPhone}`)
 
 // -------------------------------------------------------------
 // MODULE 3: Solar Sizing & PM Surya Ghar Subsidy Engine
 // -------------------------------------------------------------
 console.log("\n--- Module 3: Solar Sizing & PM Surya Ghar Subsidy ---")
-const est1 = calculateSolarEstimate({
-  preferredCapacity: 1,
-  systemType: "On-Grid",
-})
-assert(
-  est1.subsidy === 30000,
-  `1 kW On-Grid subsidy is ₹30,000 (got ${inr(est1.subsidy)})`,
-)
-assert(
-  est1.netCost === 35000,
-  `1 kW On-Grid net cost is ₹35,000 (gross: ₹65,000)`,
-)
+const est1 = calculateSolarEstimate({ preferredCapacity: 1, systemType: "On-Grid" })
+assert(est1.subsidy === 30000, `1 kW On-Grid subsidy is ₹30,000 (got ${inr(est1.subsidy)})`)
+assert(est1.netCost === 35000, `1 kW On-Grid net cost is ₹35,000 (gross: ₹65,000)`)
 
-const est2 = calculateSolarEstimate({
-  preferredCapacity: 2,
-  systemType: "On-Grid",
-})
-assert(
-  est2.subsidy === 60000,
-  `2 kW On-Grid subsidy is ₹60,000 (got ${inr(est2.subsidy)})`,
-)
-assert(
-  est2.netCost === 65000,
-  `2 kW On-Grid net cost is ₹65,000 (gross: ₹125,000)`,
-)
+const est2 = calculateSolarEstimate({ preferredCapacity: 2, systemType: "On-Grid" })
+assert(est2.subsidy === 60000, `2 kW On-Grid subsidy is ₹60,000 (got ${inr(est2.subsidy)})`)
+assert(est2.netCost === 65000, `2 kW On-Grid net cost is ₹65,000 (gross: ₹125,000)`)
 
-const est3 = calculateSolarEstimate({
-  preferredCapacity: 3,
-  systemType: "On-Grid",
-})
-assert(
-  est3.subsidy === 78000,
-  `3 kW On-Grid subsidy is max ₹78,000 (got ${inr(est3.subsidy)})`,
-)
-assert(
-  est3.netCost === 102000,
-  `3 kW On-Grid net cost is ₹102,000 (gross: ₹180,000)`,
-)
-assert(
-  est3.paybackYears <= 3.5,
-  `3 kW Payback period is ${est3.paybackYears} years (<= 3.5 yrs)`,
-)
+const est3 = calculateSolarEstimate({ preferredCapacity: 3, systemType: "On-Grid" })
+assert(est3.subsidy === 78000, `3 kW On-Grid subsidy is max ₹78,000 (got ${inr(est3.subsidy)})`)
+assert(est3.netCost === 102000, `3 kW On-Grid net cost is ₹102,000 (gross: ₹180,000)`)
+assert(est3.paybackYears <= 3.5, `3 kW Payback period is ${est3.paybackYears} years (<= 3.5 yrs)`)
 
-const est5 = calculateSolarEstimate({
-  preferredCapacity: 5,
-  systemType: "On-Grid",
-})
+const est5 = calculateSolarEstimate({ preferredCapacity: 5, systemType: "On-Grid" })
 assert(est5.subsidy === 78000, `5 kW On-Grid subsidy is capped at ₹78,000 flat`)
 
-const estOffGrid = calculateSolarEstimate({
-  preferredCapacity: 3,
-  systemType: "Off-Grid",
-})
-assert(
-  estOffGrid.subsidy === 0,
-  `Off-grid systems with battery have ₹0 PM Surya Ghar subsidy`,
-)
-assert(
-  estOffGrid.grossCost === 245000,
-  `3 kW Off-grid system gross cost is ₹245,000`,
-)
+const estOffGrid = calculateSolarEstimate({ preferredCapacity: 3, systemType: "Off-Grid" })
+assert(estOffGrid.subsidy === 0, `Off-grid systems with battery have ₹0 PM Surya Ghar subsidy`)
+assert(estOffGrid.grossCost === 245000, `3 kW Off-grid system gross cost is ₹245,000`)
 
 // -------------------------------------------------------------
 // MODULE 4: Chatbot Database Query Engine Lookups
@@ -177,15 +105,9 @@ console.log("\n--- Module 4: Chatbot Database Lookups & Grounding ---")
 
 // Customer phone lookup
 const custQuery = queryDatabase("What is the status for phone 9822334455?")
-assert(
-  custQuery?.found === true,
-  `Phone lookup matched record for Priya Deshmukh`,
-)
+assert(custQuery?.found === true, `Phone lookup matched record for Priya Deshmukh`)
 assert(custQuery?.category === "customer", `Result categorized as 'customer'`)
-assert(
-  custQuery?.summary.includes("Priya Deshmukh") === true,
-  `Summary includes customer name`,
-)
+assert(custQuery?.summary.includes("Priya Deshmukh") === true, `Summary includes customer name`)
 
 // Customer name query
 const nameQuery = queryDatabase("Check account for Priya Deshmukh")
@@ -199,35 +121,23 @@ assert(leadQuery?.category === "lead", `Result categorized as 'lead'`)
 // Quotation lookup
 const quoteQuery = queryDatabase("Details for quotation QT-0001")
 assert(quoteQuery?.found === true, `Found quotation QT-0001`)
-assert(
-  quoteQuery?.category === "quotation",
-  `Result categorized as 'quotation'`,
-)
+assert(quoteQuery?.category === "quotation", `Result categorized as 'quotation'`)
 
 // Sales Order lookup
 const soQuery = queryDatabase("Track sales order SO-0001")
 assert(soQuery?.found === true, `Found sales order SO-0001`)
 assert(soQuery?.category === "order", `Result categorized as 'order'`)
-assert(
-  soQuery?.summary.includes("₹2,77,867") === true,
-  `Order total ₹2,77,867 present in response`,
-)
+assert(soQuery?.summary.includes("₹2,77,867") === true, `Order total ₹2,77,867 present in response`)
 
 // Installation lookup
 const instQuery = queryDatabase("Track installation SOL-2025-0001")
 assert(instQuery?.found === true, `Found installation SOL-2025-0001`)
-assert(
-  instQuery?.category === "installation",
-  `Result categorized as 'installation'`,
-)
+assert(instQuery?.category === "installation", `Result categorized as 'installation'`)
 
 // Service ticket lookup
 const tktQuery = queryDatabase("What is the diagnosis for ticket TKT-0001?")
 assert(tktQuery?.found === true, `Found service ticket TKT-0001`)
-assert(
-  tktQuery?.summary.includes("hotspot") === true,
-  `Ticket issue details accurately reported`,
-)
+assert(tktQuery?.summary.includes("hotspot") === true, `Ticket issue details accurately reported`)
 
 // Serial number & warranty check
 const serialQuery = queryDatabase("Verify serial PN540-100001")
@@ -237,10 +147,7 @@ assert(serialQuery?.category === "warranty", `Categorized as 'warranty'`)
 // Warehouse inventory & catalog lookup
 const catQuery = queryDatabase("Show me solar panel pricing and wattage")
 assert(catQuery?.found === true, `Matched solar panel catalog query`)
-assert(
-  catQuery?.summary.includes("540 Wp") === true,
-  `Catalog reports 540 Wp Mono PERC`,
-)
+assert(catQuery?.summary.includes("540 Wp") === true, `Catalog reports 540 Wp Mono PERC`)
 
 const invQuery = queryDatabase("How much inventory is in the warehouse?")
 assert(invQuery?.found === true, `Matched warehouse inventory query`)
@@ -254,14 +161,8 @@ assert(statsQuery?.found === true, `Database leads statistics returned`)
 // -------------------------------------------------------------
 console.log("\n--- Module 5: Multilingual Assistant Turns ---")
 const greeting = assistantService.greet()
-assert(
-  greeting.text.length > 20,
-  `Assistant greeting generated: "${greeting.text.slice(0, 40)}..."`,
-)
-assert(
-  greeting.quickReplies.length >= 3,
-  `Greeting provides ${greeting.quickReplies.length} language choices`,
-)
+assert(greeting.text.length > 20, `Assistant greeting generated: "${greeting.text.slice(0, 40)}..."`)
+assert(greeting.quickReplies.length >= 3, `Greeting provides ${greeting.quickReplies.length} language choices`)
 
 // -------------------------------------------------------------
 // MODULE 6: Debounced Search & Invariant Verification
@@ -274,15 +175,11 @@ for (const so of db.salesOrders) {
   const pSum = db.payments
     .filter((p) => p.salesOrderId === so.id)
     .reduce((sum, p) => sum + p.amount, 0)
-  if (pSum > so.total + 1) {
-    // allow small float precision
+  if (pSum > so.total + 1) { // allow small float precision
     totalPaymentsValid = false
   }
 }
-assert(
-  totalPaymentsValid,
-  `Financial integrity: No sales order has recorded payments exceeding contract total`,
-)
+assert(totalPaymentsValid, `Financial integrity: No sales order has recorded payments exceeding contract total`)
 
 // Installation warranty link
 let instWarrantiesValid = true
@@ -292,33 +189,22 @@ for (const inst of db.installations.filter((i) => i.status === "Completed")) {
     instWarrantiesValid = false
   }
 }
-assert(
-  instWarrantiesValid,
-  `Every completed installation has registered hardware warranties`,
-)
+assert(instWarrantiesValid, `Every completed installation has registered hardware warranties`)
 
 // -------------------------------------------------------------
 // MODULE 7: AI Prospect Intelligence Feed to Sales Dashboard
 // -------------------------------------------------------------
-console.log(
-  "\n--- Module 7: AI Prospect Intelligence Feed to Sales Dashboard ---",
-)
+console.log("\n--- Module 7: AI Prospect Intelligence Feed to Sales Dashboard ---")
 // Check conversations and AI leads are captured with user details and specs
 const aiLeads = db.leads.filter((l) => l.source === "AI Assistant")
-assert(
-  aiLeads.length > 0,
-  `Captured ${aiLeads.length} leads originating from AI Assistant`,
-)
+assert(aiLeads.length > 0, `Captured ${aiLeads.length} leads originating from AI Assistant`)
 
 const convos = db.conversations
 assert(convos.length > 0, `Loaded ${convos.length} live visitor conversations`)
 
 // Check spec extraction: monthly bill, capacity, phone, city
 const testConv = convos[0]
-assert(
-  Boolean(testConv.collected),
-  `Conversation ${testConv.id} contains collected user specifications`,
-)
+assert(Boolean(testConv.collected), `Conversation ${testConv.id} contains collected user specifications`)
 
 // Verify estimate calculation from collected specs
 const estFromConv = calculateSolarEstimate({
@@ -327,21 +213,12 @@ const estFromConv = calculateSolarEstimate({
   systemType: testConv.collected.systemType || "On-Grid",
   roofArea: testConv.collected.roofArea,
 })
-assert(
-  estFromConv.capacityKw > 0,
-  `Derived solar sizing ${estFromConv.capacityKw} kW for prospect`,
-)
-assert(
-  estFromConv.subsidy > 0,
-  `Derived PM Surya Ghar subsidy ${inr(estFromConv.subsidy)} for prospect`,
-)
+assert(estFromConv.capacityKw > 0, `Derived solar sizing ${estFromConv.capacityKw} kW for prospect`)
+assert(estFromConv.subsidy > 0, `Derived PM Surya Ghar subsidy ${inr(estFromConv.subsidy)} for prospect`)
 
 // Verify intent scoring
 const hasAdvisorRequest = convos.some((c) => c.status === "Needs Human")
-assert(
-  hasAdvisorRequest,
-  `Successfully flags visitor conversations requesting advisor intervention`,
-)
+assert(hasAdvisorRequest, `Successfully flags visitor conversations requesting advisor intervention`)
 
 console.log("\n=======================================================")
 console.log(`FULL INTEGRATION RUN: ${passCount} PASSED, ${failCount} FAILED`)

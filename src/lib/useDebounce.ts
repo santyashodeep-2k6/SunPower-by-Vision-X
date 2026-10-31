@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react"
  * @param delay Milliseconds to wait after the last change (default: 300ms)
  * @returns The debounced value
  */
-
 export function useDebounce<T>(value: T, delay: number = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
@@ -35,14 +34,11 @@ export function useDebounce<T>(value: T, delay: number = 300): T {
  * @param delay Milliseconds to wait (default: 300ms)
  * @returns A debounced callback function with a .cancel() method
  */
-
 export function useDebouncedCallback<Args extends unknown[]>(
   callback: (...args: Args) => void,
-
   delay: number = 300,
 ) {
   const callbackRef = useRef(callback)
-
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -53,7 +49,6 @@ export function useDebouncedCallback<Args extends unknown[]>(
     if (timerRef.current) {
       clearTimeout(timerRef.current)
     }
-
     timerRef.current = setTimeout(() => {
       callbackRef.current(...args)
     }, delay)
@@ -62,7 +57,6 @@ export function useDebouncedCallback<Args extends unknown[]>(
   debounced.cancel = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
-
       timerRef.current = null
     }
   }
@@ -75,3 +69,4 @@ export function useDebouncedCallback<Args extends unknown[]>(
 
   return debounced
 }
+

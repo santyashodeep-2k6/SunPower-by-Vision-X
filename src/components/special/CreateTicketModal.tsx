@@ -1,19 +1,11 @@
 import { useEffect, useState } from "react"
-
 import type { Photo, Priority } from "@/lib/types"
-
 import { productOf } from "@/lib/rules"
-
 import { useDb } from "@/data/store"
-
 import { createTicket } from "@/services/aftersales"
-
 import { useAction } from "@/lib/useAction"
-
 import { Button } from "@/components/ui/Button"
-
 import { Spinner } from "@/components/ui/feedback"
-
 import {
   FileUploader,
   FormField,
@@ -21,145 +13,92 @@ import {
   SelectInput,
   TextArea,
 } from "@/components/ui/forms"
-
 import { Modal, useToast } from "@/components/ui/overlays"
-
 import { WarrantyCard } from "./WarrantyCard"
-
 import { useWarrantyCheck } from "./useWarrantyCheck"
 
 export function CreateTicketModal({
   open,
-
   onClose,
-
   customerId: fixedCustomer,
-
   raisedBy,
-
   onCreated,
 }: {
   open: boolean
-
   onClose: () => void
-
   customerId?: string
-
   raisedBy: "customer" | "staff"
-
   onCreated?: (id: string) => void
 }) {
   const db = useDb()
-
   const toast = useToast()
-
   const { run, pending } = useAction()
-
   const [customerId, setCustomerId] = useState(fixedCustomer ?? "")
-
   const [instId, setInstId] = useState("")
-
   const [serial, setSerial] = useState("")
-
   const [issue, setIssue] = useState("")
-
   const [priority, setPriority] = useState<Priority>("Medium")
-
   const [photos, setPhotos] = useState<Photo[]>([])
-
   const [tried, setTried] = useState(false)
-
   const installs = db.installations.filter(
     (i) => i.customerId === customerId && i.status === "Completed",
   )
-
   const units = db.units.filter(
     (u) => u.installationId === instId && u.status === "Installed",
   )
-
   const { result, loading } = useWarrantyCheck(
     serial || installs.find((i) => i.id === instId)?.reference,
   )
-
   useEffect(() => {
     if (open) {
       setCustomerId(fixedCustomer ?? "")
-
       setSerial("")
-
       setIssue("")
-
       setPhotos([])
-
       setTried(false)
     }
   }, [open, fixedCustomer])
-
   useEffect(() => {
     setInstId(installs[0]?.id ?? "")
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId])
-
   useEffect(() => {
     setSerial("")
   }, [instId])
-
   const save = () => {
     setTried(true)
-
     if (!instId || issue.trim().length < 10) return
-
     run(
       "ticket",
-
       () =>
         createTicket({
           customerId,
-
           installationId: instId,
-
           serial: serial || undefined,
-
           issue,
-
           priority,
-
           photos,
-
           raisedBy,
         }),
-
       (id) => `Ticket ${id} raised`,
     )
-
       .then((id) => (onClose(), onCreated?.(id)))
-
       .catch(() => undefined)
   }
-
   const customers = db.customers
-
     .filter((c) =>
       db.installations.some(
         (i) => i.customerId === c.id && i.status === "Completed",
       ),
     )
-
     .map((c) => ({
       value: c.id,
-
       label: c.name,
-
       description: `${c.phone} · ${db.installations
-
         .filter((i) => i.customerId === c.id)
-
         .map((i) => i.reference)
-
         .join(", ")}`,
     }))
-
   return (
     <Modal
       open={open}
@@ -219,7 +158,6 @@ export function CreateTicketModal({
               }
               options={installs.map((i) => ({
                 value: i.id,
-
                 label: `${i.reference} — ${i.capacity} kW ${i.systemType}`,
               }))}
             />
@@ -234,7 +172,6 @@ export function CreateTicketModal({
               placeholder="General / workmanship"
               options={units.map((u) => ({
                 value: u.serial,
-
                 label: `${productOf(db, u.productId)?.name} — ${u.serial}`,
               }))}
             />

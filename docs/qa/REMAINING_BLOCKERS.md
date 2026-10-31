@@ -42,4 +42,3 @@ This document identifies all external dependencies, third-party credentials, and
 
 - **PostgreSQL Migrations**: Flyway migrations are up to date through `V10`. All columns (`site_id`, `lead_id`, `survey_id`, `photos`, `notes`) have sufficient width and constraints.
 - **Environment Parity**: Ensure production environment sets `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` via environment variables rather than hardcoded defaults.
-

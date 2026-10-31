@@ -1,7 +1,5 @@
 import { useMemo, useState } from "react"
-
 import { Link } from "react-router"
-
 import {
   ArrowRight,
   Bot,
@@ -22,292 +20,163 @@ import {
   User,
   Zap,
 } from "lucide-react"
-
 import type { Conversation, DemoDB, Lead } from "@/lib/types"
-
 import { fmtDateTime, inr, relative } from "@/lib/format"
-
 import { calculateSolarEstimate } from "@/services/assistant"
-
 import { StatusBadge } from "@/components/ui/feedback"
 
 interface Props {
   db: DemoDB
-
   className?: string
 }
 
 export function AIAssistantInsightsCard({ db, className = "" }: Props) {
-  const [filter, setFilter] = useState<"all" | "needs-human" | "high-intent">(
-    "all",
-  )
+  const [filter, setFilter] = useState<"all" | "needs-human" | "high-intent">("all")
 
   // Synthesize AI prospect insights across live conversations and AI-originated leads
-
   const insights = useMemo(() => {
     // 1. Gather all conversations
-
     const convItems = db.conversations.map((conv) => {
       const cust = db.customers.find(
-        (c) =>
-          c.id === conv.customerId ||
-          (conv.collected.phone && c.phone === conv.collected.phone),
+        (c) => c.id === conv.customerId || (conv.collected.phone && c.phone === conv.collected.phone),
       )
-
       const lead = db.leads.find(
         (l) => l.id === conv.leadId || (cust && l.customerId === cust.id),
       )
-
-      const site = cust
-        ? db.sites.find((s) => s.customerId === cust.id)
-        : undefined
+      const site = cust ? db.sites.find((s) => s.customerId === cust.id) : undefined
 
       const bill = conv.collected.monthlyBill || lead?.monthlyBill
-
       const kw = conv.collected.capacity || lead?.preferredCapacity
-
-      const systemType =
-        conv.collected.systemType || lead?.systemType || "On-Grid"
-
+      const systemType = conv.collected.systemType || lead?.systemType || "On-Grid"
       const estimate =
         bill || kw
           ? calculateSolarEstimate({
               monthlyBill: bill,
-
               preferredCapacity: kw,
-
               systemType,
-
               roofArea: conv.collected.roofArea || lead?.roofArea,
             })
           : undefined
 
-      const customerName =
-        cust?.name || conv.collected.name || "Website Visitor"
-
+      const customerName = cust?.name || conv.collected.name || "Website Visitor"
       const phone = cust?.phone || conv.collected.phone
-
       const city = conv.collected.city || site?.city || "Pune"
-
-      const propertyType =
-        conv.collected.propertyType || site?.propertyType || "Residential"
+      const propertyType = conv.collected.propertyType || site?.propertyType || "Residential"
 
       // AI Intent Score calculation
-
       let score = 50
-
       if (phone) score += 20
-
       if (bill) score += 15
-
       if (conv.collected.capacity || conv.collected.roofArea) score += 10
-
       if (conv.status === "Needs Human") score += 5
 
       // Key AI-extracted discussion points
-
       const keyPoints: string[] = []
-
       if (bill) {
-        keyPoints.push(
-          `Monthly electricity bill: ${inr(bill)} (${estimate?.monthlyUnits ?? 400} units/mo)`,
-        )
+        keyPoints.push(`Monthly electricity bill: ${inr(bill)} (${estimate?.monthlyUnits ?? 400} units/mo)`)
       }
-
       if (estimate) {
         keyPoints.push(`Recommended: ${estimate.capacityKw} kW ${systemType}`)
-
         if (estimate.subsidy > 0) {
-          keyPoints.push(
-            `Eligible for ${inr(estimate.subsidy)} PM Surya Ghar DBT cash subsidy`,
-          )
-
-          keyPoints.push(
-            `Estimated turnkey cost: ${inr(estimate.grossCost)} (Net: ${inr(estimate.netCost)})`,
-          )
+          keyPoints.push(`Eligible for ${inr(estimate.subsidy)} PM Surya Ghar DBT cash subsidy`)
+          keyPoints.push(`Estimated turnkey cost: ${inr(estimate.grossCost)} (Net: ${inr(estimate.netCost)})`)
         }
       }
-
       if (conv.collected.roofArea) {
-        keyPoints.push(
-          `Available rooftop space: ~${conv.collected.roofArea} sq ft`,
-        )
+        keyPoints.push(`Available rooftop space: ~${conv.collected.roofArea} sq ft`)
       }
 
       // Check last customer messages for high-intent keywords
-
-      const lastUserMsg =
-        [...conv.messages].reverse().find((m) => m.from === "customer")?.text ||
-        ""
-
+      const lastUserMsg = [...conv.messages].reverse().find((m) => m.from === "customer")?.text || ""
       const lower = lastUserMsg.toLowerCase()
-
       if (lower.includes("subsidy") || lower.includes("subsid")) {
-        keyPoints.push(
-          "Inquired specifically about government PM Surya Ghar subsidy payout & timeline",
-        )
+        keyPoints.push("Inquired specifically about government PM Surya Ghar subsidy payout & timeline")
       }
-
-      if (
-        lower.includes("price") ||
-        lower.includes("cost") ||
-        lower.includes("rate")
-      ) {
-        keyPoints.push(
-          "Requested turnkey equipment & net metering pricing breakdown",
-        )
+      if (lower.includes("price") || lower.includes("cost") || lower.includes("rate")) {
+        keyPoints.push("Requested turnkey equipment & net metering pricing breakdown")
       }
-
       if (lower.includes("ac") || lower.includes("air conditioner")) {
         keyPoints.push("Wants solar to power daytime air-conditioning load")
       }
-
-      if (
-        lower.includes("survey") ||
-        lower.includes("visit") ||
-        lower.includes("inspection")
-      ) {
-        keyPoints.push(
-          "Ready for free on-site shadow mapping & engineering survey",
-        )
+      if (lower.includes("survey") || lower.includes("visit") || lower.includes("inspection")) {
+        keyPoints.push("Ready for free on-site shadow mapping & engineering survey")
       }
 
       return {
         id: conv.id,
-
         leadId: lead?.id,
-
         customerId: cust?.id,
-
         type: "conversation" as const,
-
         name: customerName,
-
         phone,
-
         city,
-
         propertyType,
-
         channel: conv.channel,
-
         language: conv.language || "English",
-
         status: conv.status,
-
         score,
-
         bill,
-
         estimate,
-
         keyPoints,
-
         lastMessage: lastUserMsg,
-
         updatedAt: conv.updatedAt,
       }
     })
 
     // 2. Also incorporate AI Assistant leads with rich summaries
-
     const aiLeadItems = db.leads
-
-      .filter(
-        (l) =>
-          l.source === "AI Assistant" &&
-          !convItems.some((c) => c.leadId === l.id),
-      )
-
+      .filter((l) => l.source === "AI Assistant" && !convItems.some((c) => c.leadId === l.id))
       .map((lead) => {
         const cust = db.customers.find((c) => c.id === lead.customerId)
-
         const site = db.sites.find((s) => s.id === lead.siteId)
-
         const estimate = calculateSolarEstimate({
           monthlyBill: lead.monthlyBill,
-
           preferredCapacity: lead.preferredCapacity,
-
           systemType: lead.systemType,
-
           roofArea: lead.roofArea,
         })
 
         const keyPoints: string[] = []
-
-        if (lead.monthlyBill)
-          keyPoints.push(`Monthly electricity bill: ${inr(lead.monthlyBill)}`)
-
+        if (lead.monthlyBill) keyPoints.push(`Monthly electricity bill: ${inr(lead.monthlyBill)}`)
         if (estimate) {
-          keyPoints.push(
-            `Recommended: ${estimate.capacityKw} kW ${lead.systemType || "On-Grid"}`,
-          )
-
-          if (estimate.subsidy > 0)
-            keyPoints.push(
-              `Eligible for ${inr(estimate.subsidy)} PM Surya Ghar subsidy`,
-            )
+          keyPoints.push(`Recommended: ${estimate.capacityKw} kW ${lead.systemType || "On-Grid"}`)
+          if (estimate.subsidy > 0) keyPoints.push(`Eligible for ${inr(estimate.subsidy)} PM Surya Ghar subsidy`)
         }
-
         if (lead.aiSummary?.summary) {
           keyPoints.push(lead.aiSummary.summary)
         }
 
         return {
           id: lead.id,
-
           leadId: lead.id,
-
           customerId: cust?.id,
-
           type: "lead" as const,
-
           name: cust?.name || "AI Inquired Prospect",
-
           phone: cust?.phone,
-
           city: site?.city || "Pune",
-
           propertyType: site?.propertyType || "Residential",
-
           channel: "AI Assistant" as const,
-
           language: cust?.language || "English",
-
           status: lead.status as any,
-
           score: lead.aiSummary?.score || 80,
-
           bill: lead.monthlyBill,
-
           estimate,
-
           keyPoints,
-
-          lastMessage:
-            lead.requirements ||
-            "Submitted solar assessment via SunFlow AI Assistant",
-
+          lastMessage: lead.requirements || "Submitted solar assessment via SunFlow AI Assistant",
           updatedAt: lead.updatedAt || lead.createdAt,
         }
       })
 
     const combined = [...convItems, ...aiLeadItems].sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     )
 
     return combined
   }, [db])
 
   // Top metric counters
-
   const totalSubsidiesUnlocked = useMemo(() => {
-    return insights.reduce(
-      (sum, item) => sum + (item.estimate?.subsidy || 0),
-      0,
-    )
+    return insights.reduce((sum, item) => sum + (item.estimate?.subsidy || 0), 0)
   }, [insights])
 
   const needsHumanCount = useMemo(() => {
@@ -322,18 +191,14 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
     if (filter === "needs-human") {
       return insights.filter((i) => i.status === "Needs Human")
     }
-
     if (filter === "high-intent") {
       return insights.filter((i) => i.score >= 70)
     }
-
     return insights
   }, [insights, filter])
 
   return (
-    <div
-      className={`surface overflow-hidden border border-emerald/20 shadow-sm ${className}`}
-    >
+    <div className={`surface overflow-hidden border border-emerald/20 shadow-sm ${className}`}>
       {/* Header with AI gradient & intent filter tabs */}
       <div className="flex flex-col gap-3 border-b border-forest/10 bg-gradient-to-r from-emerald/10 via-sunshine/10 to-transparent p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
@@ -351,8 +216,7 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
               </span>
             </div>
             <p className="text-[12.5px] text-muted">
-              Live customer specifications, sizing, and buying intent
-              synthesized automatically by the AI Assistant.
+              Live customer specifications, sizing, and buying intent synthesized automatically by the AI Assistant.
             </p>
           </div>
         </div>
@@ -400,43 +264,22 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
       {/* AI Key Insights Summary Bar */}
       <div className="grid grid-cols-2 divide-x divide-forest/8 border-b border-forest/8 bg-[#FBFDFB] text-center md:grid-cols-4">
         <div className="p-3">
-          <p className="text-[11px] font-medium text-muted uppercase">
-            Live Captured Prospects
-          </p>
+          <p className="text-[11px] font-medium text-muted uppercase">Live Captured Prospects</p>
           <p className="text-[20px] font-bold text-ink">{insights.length}</p>
         </div>
         <div className="p-3">
-          <p className="text-[11px] font-medium text-muted uppercase">
-            Subsidy Unlocked
-          </p>
-          <p className="text-[20px] font-bold text-botanical">
-            {inr(totalSubsidiesUnlocked)}
-          </p>
+          <p className="text-[11px] font-medium text-muted uppercase">Subsidy Unlocked</p>
+          <p className="text-[20px] font-bold text-botanical">{inr(totalSubsidiesUnlocked)}</p>
         </div>
         <div className="p-3">
-          <p className="text-[11px] font-medium text-muted uppercase">
-            High-Intent Leads
-          </p>
+          <p className="text-[11px] font-medium text-muted uppercase">High-Intent Leads</p>
           <p className="text-[20px] font-bold text-ink">
-            {highIntentCount}{" "}
-            <span className="text-[12px] font-normal text-muted">
-              (
-              {Math.round(
-                (highIntentCount / Math.max(1, insights.length)) * 100,
-              )}
-              %)
-            </span>
+            {highIntentCount} <span className="text-[12px] font-normal text-muted">({Math.round((highIntentCount / Math.max(1, insights.length)) * 100)}%)</span>
           </p>
         </div>
         <div className="p-3">
-          <p className="text-[11px] font-medium text-muted uppercase">
-            Advisor Intervention
-          </p>
-          <p
-            className={`text-[20px] font-bold ${
-              needsHumanCount > 0 ? "text-[#C2412D]" : "text-muted"
-            }`}
-          >
+          <p className="text-[11px] font-medium text-muted uppercase">Advisor Intervention</p>
+          <p className={`text-[20px] font-bold ${needsHumanCount > 0 ? "text-[#C2412D]" : "text-muted"}`}>
             {needsHumanCount}
           </p>
         </div>
@@ -447,9 +290,7 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
         {filtered.length === 0 ? (
           <div className="p-8 text-center text-muted">
             <Bot className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            <p className="text-sm font-medium">
-              No prospects match this filter.
-            </p>
+            <p className="text-sm font-medium">No prospects match this filter.</p>
           </div>
         ) : (
           filtered.slice(0, 6).map((item) => (
@@ -463,9 +304,7 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
                 {/* Left: User profile & details */}
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base font-semibold text-ink">
-                      {item.name}
-                    </span>
+                    <span className="text-base font-semibold text-ink">{item.name}</span>
 
                     {/* AI Intent score pill */}
                     <span
@@ -492,9 +331,7 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
                       </span>
                     )}
 
-                    <span className="text-[11.5px] text-muted">
-                      · {relative(item.updatedAt)}
-                    </span>
+                    <span className="text-[11.5px] text-muted">· {relative(item.updatedAt)}</span>
                   </div>
 
                   {/* Contact & Location coordinates */}
@@ -553,29 +390,21 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
               {/* Middle: What the user specified & AI Calculations */}
               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-forest/8 bg-white p-2.5 shadow-2xs">
-                  <span className="block text-[11px] font-medium text-muted">
-                    Electricity Bill
-                  </span>
+                  <span className="block text-[11px] font-medium text-muted">Electricity Bill</span>
                   <span className="text-sm font-semibold text-ink">
                     {item.bill ? inr(item.bill) + " / mo" : "Not specified"}
                   </span>
                 </div>
 
                 <div className="rounded-xl border border-forest/8 bg-white p-2.5 shadow-2xs">
-                  <span className="block text-[11px] font-medium text-muted">
-                    Recommended Sizing
-                  </span>
+                  <span className="block text-[11px] font-medium text-muted">Recommended Sizing</span>
                   <span className="text-sm font-semibold text-ink">
-                    {item.estimate
-                      ? `${item.estimate.capacityKw} kW System`
-                      : "Sizing pending"}
+                    {item.estimate ? `${item.estimate.capacityKw} kW System` : "Sizing pending"}
                   </span>
                 </div>
 
                 <div className="rounded-xl border border-forest/8 bg-white p-2.5 shadow-2xs">
-                  <span className="block text-[11px] font-medium text-muted">
-                    PM Surya Ghar Subsidy
-                  </span>
+                  <span className="block text-[11px] font-medium text-muted">PM Surya Ghar Subsidy</span>
                   <span className="text-sm font-semibold text-botanical">
                     {item.estimate && item.estimate.subsidy > 0
                       ? inr(item.estimate.subsidy) + " Direct DBT"
@@ -584,9 +413,7 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
                 </div>
 
                 <div className="rounded-xl border border-forest/8 bg-white p-2.5 shadow-2xs">
-                  <span className="block text-[11px] font-medium text-muted">
-                    Estimated Net Outlay
-                  </span>
+                  <span className="block text-[11px] font-medium text-muted">Estimated Net Outlay</span>
                   <span className="text-sm font-semibold text-ink">
                     {item.estimate
                       ? `${inr(item.estimate.netCost)} (~${item.estimate.paybackYears}Y payback)`
@@ -638,3 +465,4 @@ export function AIAssistantInsightsCard({ db, className = "" }: Props) {
     </div>
   )
 }
+

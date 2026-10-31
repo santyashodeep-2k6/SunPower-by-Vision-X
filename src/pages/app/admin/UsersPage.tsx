@@ -1,84 +1,51 @@
 import { useState } from "react"
-
 import { Plus } from "lucide-react"
-
 import type { User } from "@/lib/types"
-
 import { isValidEmail, isValidIndianMobile } from "@/lib/format"
-
 import { useDb } from "@/data/store"
-
 import { createUser, updateUser } from "@/services/admin"
-
 import { ROLE_LABEL } from "@/app/navigation"
-
 import { useAction } from "@/lib/useAction"
-
 import { PageHeader } from "@/components/layout/PageHeader"
-
 import { Button } from "@/components/ui/Button"
-
 import { Avatar, Callout, StatusBadge } from "@/components/ui/feedback"
-
 import { DataTable, SearchFilterBar, type Column } from "@/components/ui/data"
-
 import { FormField, SelectInput, TextInput } from "@/components/ui/forms"
-
 import { Modal } from "@/components/ui/overlays"
 
 const ROLES = [
   "admin",
-
   "sales",
-
   "surveyor",
-
   "inventory",
-
   "installer",
-
   "service",
 ] as const
 
 export default function UsersPage() {
   const db = useDb()
-
   const { run, fire, pending } = useAction()
-
   const [q, setQ] = useState("")
-
   const [role, setRole] = useState("")
-
   const [open, setOpen] = useState(false)
-
   const [f, setF] = useState({
     name: "",
-
     email: "",
-
     phone: "",
-
     role: "sales" as User["role"],
-
     title: "",
   })
-
   const [tried, setTried] = useState(false)
-
   const rows = db.users.filter(
     (u) =>
       (!role || u.role === role) &&
       (!q || `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase())),
   )
-
   const columns: Column<User>[] = [
     {
       key: "name",
-
       header: "Name",
-
       sortValue: (u) => u.name,
-
       render: (u) => (
         <span className="flex items-center gap-3">
           <Avatar name={u.name} size="sm" />
@@ -89,14 +56,10 @@ export default function UsersPage() {
         </span>
       ),
     },
-
     {
       key: "role",
-
       header: "Role",
-
       sortValue: (u) => u.role,
-
       render: (u) => (
         <select
           aria-label={`Role for ${u.name}`}
@@ -104,9 +67,7 @@ export default function UsersPage() {
           onChange={(e) =>
             fire(
               `role-${u.id}`,
-
               () => updateUser(u.id, { role: e.target.value as User["role"] }),
-
               "Role updated",
             )
           }
@@ -120,12 +81,9 @@ export default function UsersPage() {
         </select>
       ),
     },
-
     {
       key: "contact",
-
       header: "Contact",
-
       render: (u) => (
         <span className="text-[13px]">
           {u.email}
@@ -133,26 +91,19 @@ export default function UsersPage() {
         </span>
       ),
     },
-
     {
       key: "st",
-
       header: "Status",
-
       render: (u) => (
         <StatusBadge tone={u.active ? "success" : "neutral"}>
           {u.active ? "Active" : "Inactive"}
         </StatusBadge>
       ),
     },
-
     {
       key: "act",
-
       header: "",
-
       align: "right",
-
       render: (u) => (
         <Button
           size="sm"
@@ -161,9 +112,7 @@ export default function UsersPage() {
           onClick={() =>
             fire(
               `act-${u.id}`,
-
               () => updateUser(u.id, { active: !u.active }),
-
               u.active ? "User deactivated" : "User reactivated",
             )
           }
@@ -173,15 +122,11 @@ export default function UsersPage() {
       ),
     },
   ]
-
   const errs = {
     name: f.name.trim().length < 2 ? "Name is required." : "",
-
     email: !isValidEmail(f.email) ? "Valid email required." : "",
-
     phone: !isValidIndianMobile(f.phone) ? "Valid mobile required." : "",
   }
-
   return (
     <>
       <PageHeader
@@ -212,13 +157,9 @@ export default function UsersPage() {
             filters={[
               {
                 id: "r",
-
                 label: "Role",
-
                 value: role,
-
                 onChange: setRole,
-
                 options: ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] })),
               },
             ]}
@@ -241,35 +182,25 @@ export default function UsersPage() {
             loading={pending === "add"}
             onClick={() => {
               setTried(true)
-
               if (Object.values(errs).some(Boolean)) return
-
               run(
                 "add",
-
                 () =>
                   createUser({ ...f, title: f.title || ROLE_LABEL[f.role] }),
-
                 "User added",
               )
-
                 .then(
                   () => (
                     setOpen(false),
                     setF({
                       name: "",
-
                       email: "",
-
                       phone: "",
-
                       role: "sales",
-
                       title: "",
                     })
                   ),
                 )
-
                 .catch(() => undefined)
             }}
           >
