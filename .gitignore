@@ -29,3 +29,8 @@ Backend/.idea/
 Backend/*.iml
 *.class
 
+# Mobile (Expo / React Native)
+.expo/
+.expo-shared/
+web-build/
+
