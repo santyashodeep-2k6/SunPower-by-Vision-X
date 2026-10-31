@@ -1,0 +1,41 @@
+# =============================================================================
+# PROFILE: local (Zero-dependency Standalone In-Memory Mode)
+# =============================================================================
+# Enables judges and developers to run the full SunFlow 360 backend instantly
+# without needing a local PostgreSQL instance installed or running.
+# Automatically applies all Flyway migrations and seeds all hackathon demo data.
+# =============================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:sunflow_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+server:
+  port: ${PORT:8081}
+
+logging:
+  level:
+    com.visionx.sunflow: INFO
+

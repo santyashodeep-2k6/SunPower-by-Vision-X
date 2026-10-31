@@ -1,0 +1,10 @@
+{
+  "description": "Explore solar solutions, book a free installation survey, and discover end-to-end support for installation tracking, warranties, and equipment care.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
