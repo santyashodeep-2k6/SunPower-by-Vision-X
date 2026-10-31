@@ -80,6 +80,20 @@ export const COLLECTION_ENDPOINTS: Partial<Record<keyof DemoDB, string>> = {
   notifications: "/notifications",
 }
 
+function normalizeLeadStatus(s: any): string {
+  if (!s) return "New"
+  const clean = String(s).trim().toUpperCase().replace(/[-_ ]+/g, "")
+  if (clean === "NEW") return "New"
+  if (clean.includes("CONTACT")) return "Contacted"
+  if (clean.includes("QUALIF")) return "Qualified"
+  if (clean.includes("SURVEYSCHEDULED")) return "Survey Scheduled"
+  if (clean.includes("SURVEYCOMPLETED")) return "Survey Completed"
+  if (clean.includes("QUOTATIONSENT") || clean.includes("QUOTE")) return "Quotation Sent"
+  if (clean.includes("WON") || clean.includes("CONVERT")) return "Won"
+  if (clean.includes("LOST") || clean.includes("DISQUAL")) return "Lost"
+  return "New"
+}
+
 export function normalizeDb(data: DemoDB): DemoDB {
   const next = { ...data }
 
@@ -102,7 +116,7 @@ export function normalizeDb(data: DemoDB): DemoDB {
       siteId,
       name: l.name || l.fullName || "Customer",
       source: l.source || l.channel || "Website",
-      status: l.status || "New",
+      status: normalizeLeadStatus(l.status),
       monthlyBill: l.monthlyBill != null ? Number(l.monthlyBill) : undefined,
       roofArea:
         l.roofArea != null

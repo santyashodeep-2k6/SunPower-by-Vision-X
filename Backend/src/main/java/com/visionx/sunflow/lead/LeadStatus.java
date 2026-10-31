@@ -1,6 +1,7 @@
 package com.visionx.sunflow.lead;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum LeadStatus {
     NEW,
@@ -13,6 +14,20 @@ public enum LeadStatus {
     QUOTATION_SENT,
     WON,
     LOST;
+
+    @JsonValue
+    public String toJson() {
+        return switch (this) {
+            case NEW -> "New";
+            case CONTACTED -> "Contacted";
+            case QUALIFIED -> "Qualified";
+            case DISQUALIFIED, LOST -> "Lost";
+            case CONVERTED, WON -> "Won";
+            case SURVEY_SCHEDULED -> "Survey Scheduled";
+            case SURVEY_COMPLETED -> "Survey Completed";
+            case QUOTATION_SENT -> "Quotation Sent";
+        };
+    }
 
     @JsonCreator
     public static LeadStatus fromString(String value) {

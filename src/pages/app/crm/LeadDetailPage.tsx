@@ -185,7 +185,7 @@ export default function LeadDetailPage() {
                   onSelect: () => setModal("follow"),
                   disabled: closed,
                 },
-                ...allowedLeadTransitions(lead.status).map((s) => ({
+                ...(allowedLeadTransitions(lead.status) || []).map((s) => ({
                   label: `Mark as ${s}`,
                   icon: <ChevronDown className="h-4 w-4 -rotate-90" />,
                   danger: s === "Lost",

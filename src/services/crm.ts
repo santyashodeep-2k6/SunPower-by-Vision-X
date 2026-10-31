@@ -240,7 +240,7 @@ export function assignLead(id: string, userId: string) {
   )
 }
 
-const MANUAL_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
+const MANUAL_TRANSITIONS: Record<string, LeadStatus[]> = {
   New: ["Contacted", "Qualified", "Lost"],
   Contacted: ["Qualified", "Lost"],
   Qualified: ["Contacted", "Lost"],
@@ -249,8 +249,17 @@ const MANUAL_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   "Quotation Sent": ["Lost"],
   Won: [],
   Lost: ["Contacted"],
+  NEW: ["Contacted", "Qualified", "Lost"],
+  CONTACTED: ["Qualified", "Lost"],
+  QUALIFIED: ["Contacted", "Lost"],
+  SURVEY_SCHEDULED: ["Lost"],
+  SURVEY_COMPLETED: ["Lost"],
+  QUOTATION_SENT: ["Lost"],
+  WON: [],
+  LOST: ["Contacted"],
 }
-export const allowedLeadTransitions = (s: LeadStatus) => MANUAL_TRANSITIONS[s]
+export const allowedLeadTransitions = (s: LeadStatus | string) =>
+  MANUAL_TRANSITIONS[s] ?? []
 
 export function changeLeadStatus(
   id: string,
@@ -261,7 +270,7 @@ export function changeLeadStatus(
     { method: "POST", path: `/leads/${id}/status`, body: { status, reason } },
     (db) => {
       const lead = byId(db.leads, id) ?? notFound("Lead")
-      if (!MANUAL_TRANSITIONS[lead.status].includes(status))
+      if (!(MANUAL_TRANSITIONS[lead.status] ?? []).includes(status))
         rule(
           "INVALID_TRANSITION",
           `A lead cannot move from “${lead.status}” to “${status}” manually.`,

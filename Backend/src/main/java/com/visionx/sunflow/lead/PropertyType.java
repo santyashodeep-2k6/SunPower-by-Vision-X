@@ -1,6 +1,7 @@
 package com.visionx.sunflow.lead;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum PropertyType {
     RESIDENTIAL,
@@ -8,6 +9,17 @@ public enum PropertyType {
     INDUSTRIAL,
     INSTITUTIONAL,
     OTHER;
+
+    @JsonValue
+    public String toJson() {
+        return switch (this) {
+            case RESIDENTIAL -> "Residential";
+            case COMMERCIAL -> "Commercial";
+            case INDUSTRIAL -> "Industrial";
+            case INSTITUTIONAL -> "Housing Society";
+            case OTHER -> "Residential";
+        };
+    }
 
     @JsonCreator
     public static PropertyType fromString(String value) {

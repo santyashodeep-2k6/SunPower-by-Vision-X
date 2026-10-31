@@ -1,11 +1,21 @@
 package com.visionx.sunflow.lead;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum SystemType {
     ON_GRID,
     OFF_GRID,
     HYBRID;
+
+    @JsonValue
+    public String toJson() {
+        return switch (this) {
+            case ON_GRID -> "On-Grid";
+            case OFF_GRID -> "Off-Grid";
+            case HYBRID -> "On-Grid";
+        };
+    }
 
     @JsonCreator
     public static SystemType fromString(String value) {
