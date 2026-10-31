@@ -64,3 +64,4 @@ This matrix documents the backend integration status across all frontend service
 ### B. Client-Assisted Hybrid Workflows (Clearly Identified Fallbacks)
 - **Offline / Transient Network Mode**: When backend connectivity is temporarily interrupted, `src/services/core.ts` gracefully serves the last hydrated reactive snapshot from memory without crashing the UI, providing uninterrupted user experience.
 - **Demo Seed Fixtures**: Seed datasets in `src/data/seed.ts` are explicitly tagged with `DemoBadge` indicators ("Demo reference", "Sample data") whenever simulated fixtures are rendered, adhering strictly to audit guidelines.
+

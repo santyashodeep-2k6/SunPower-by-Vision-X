@@ -11,7 +11,7 @@ export function SignatureCapture({
   saving,
 }: {
   defaultName?: string
-  existing?: { name: string; dataUrl: string; at: string }
+  existing?: { name: string dataUrl: string at: string }
   onSave: (name: string, dataUrl: string) => void
   disabled?: boolean
   saving?: boolean

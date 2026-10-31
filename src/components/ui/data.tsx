@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+
 import { Link } from "react-router"
+
 import {
   ArrowDown,
   ArrowUp,
@@ -12,28 +14,44 @@ import {
   Search,
   X,
 } from "lucide-react"
+
 import { fmtDateTime, relative } from "@/lib/format"
+
 import { EmptyState } from "./feedback"
 
 /* ================================= Panel ================================== */
 
 export function Panel({
   title,
+
   description,
+
   actions,
+
   children,
+
   className = "",
+
   bodyClass = "p-5",
+
   variant = "solid",
+
   id,
 }: {
   title?: ReactNode
+
   description?: ReactNode
+
   actions?: ReactNode
+
   children: ReactNode
+
   className?: string
+
   bodyClass?: string
+
   variant?: "solid" | "glass"
+
   id?: string
 }) {
   return (
@@ -67,9 +85,11 @@ export function Panel({
 
 export function KeyValueGrid({
   items,
+
   columns = 2,
 }: {
-  items: { label: string; value?: ReactNode; missing?: boolean; mono?: boolean }[]
+  items: { label: string value?: ReactNode missing?: boolean mono?: boolean }[]
+
   columns?: 2 | 3 | 4
 }) {
   const cols =
@@ -78,6 +98,7 @@ export function KeyValueGrid({
       : columns === 3
         ? "sm:grid-cols-3"
         : "sm:grid-cols-2"
+
   return (
     <dl className={`grid gap-x-6 gap-y-4 ${cols}`}>
       {items.map((i) => (
@@ -108,30 +129,49 @@ export function KeyValueGrid({
 
 export function StatCard({
   label,
+
   value,
+
   sub,
+
   icon,
+
   to,
+
   onClick,
+
   accent = "forest",
+
   active,
 }: {
   label: string
+
   value: ReactNode
+
   sub?: ReactNode
+
   icon?: ReactNode
+
   to?: string
+
   onClick?: () => void
+
   accent?: "forest" | "gold" | "emerald" | "amber" | "danger"
+
   active?: boolean
 }) {
   const chip = {
     forest: "bg-forest/7 text-forest",
+
     gold: "bg-sunshine/30 text-[#6E4E00]",
+
     emerald: "bg-emerald/15 text-botanical",
+
     amber: "bg-amber/18 text-[#835400]",
+
     danger: "bg-[#C2412D]/10 text-[#A93A26]",
   }[accent]
+
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -150,17 +190,20 @@ export function StatCard({
       {sub && <div className="mt-2 text-[12.5px] text-muted">{sub}</div>}
     </>
   )
+
   const cls = `glass-light block w-full p-4 text-left transition-all duration-300 ease-glass ${
     to || onClick
       ? "hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_#fff,0_18px_40px_-20px_rgb(16_61_45/0.45)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald/25 active:translate-y-0"
       : ""
   } ${active ? "ring-2 ring-emerald/60" : ""}`
+
   if (to)
     return (
       <Link to={to} className={cls}>
         {body}
       </Link>
     )
+
   if (onClick)
     return (
       <button
@@ -172,22 +215,33 @@ export function StatCard({
         {body}
       </button>
     )
+
   return <div className={cls}>{body}</div>
 }
 
 export function ChartCard({
   title,
+
   description,
+
   actions,
+
   children,
+
   className = "",
+
   height = 260,
 }: {
   title: string
+
   description?: string
+
   actions?: ReactNode
+
   children: ReactNode
+
   className?: string
+
   height?: number
 }) {
   return (
@@ -207,13 +261,19 @@ export function ChartCard({
 
 export function Tabs<T extends string>({
   tabs,
+
   value,
+
   onChange,
+
   className = "",
 }: {
-  tabs: { id: T; label: string; count?: number }[]
+  tabs: { id: T label: string count?: number }[]
+
   value: T
+
   onChange: (v: T) => void
+
   className?: string
 }) {
   return (
@@ -223,6 +283,7 @@ export function Tabs<T extends string>({
     >
       {tabs.map((t) => {
         const active = t.id === value
+
         return (
           <button
             key={t.id}
@@ -257,52 +318,76 @@ export function Tabs<T extends string>({
 
 export interface FilterDef {
   id: string
+
   label: string
+
   value: string
-  options: { value: string; label: string }[]
+
+  options: { value: string label: string }[]
+
   onChange: (v: string) => void
 }
 
 export function SearchFilterBar({
   search,
+
   onSearch,
+
   placeholder = "Search…",
+
   debounceMs = 300,
+
   filters = [],
+
   actions,
+
   onReset,
+
   children,
 }: {
   search: string
+
   onSearch: (v: string) => void
+
   placeholder?: string
+
   debounceMs?: number
+
   filters?: FilterDef[]
+
   actions?: ReactNode
+
   onReset?: () => void
+
   children?: ReactNode
 }) {
   const [localSearch, setLocalSearch] = useState(search)
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Sync external search changes (e.g. URL change or reset) to local state
+
   useEffect(() => {
     setLocalSearch(search)
   }, [search])
 
   const handleSearchChange = (value: string) => {
     setLocalSearch(value)
+
     if (timerRef.current) {
       clearTimeout(timerRef.current)
     }
 
     // If clearing or debounce is disabled, trigger immediately
+
     if (debounceMs <= 0 || value === "") {
       onSearch(value)
+
       return
     }
 
     // Debounce fast keystrokes
+
     timerRef.current = setTimeout(() => {
       onSearch(value)
     }, debounceMs)
@@ -311,9 +396,12 @@ export function SearchFilterBar({
   const handleReset = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
+
       timerRef.current = null
     }
+
     setLocalSearch("")
+
     if (onReset) onReset()
     else onSearch("")
   }
@@ -325,6 +413,7 @@ export function SearchFilterBar({
   }, [])
 
   const active = !!localSearch || !!search || filters.some((f) => f.value)
+
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
       <div className="relative min-w-0 flex-1 lg:max-w-sm">
@@ -381,23 +470,35 @@ export function SearchFilterBar({
 
 export function Pagination({
   page,
+
   pageCount,
+
   onPage,
+
   total,
+
   pageSize,
 }: {
   page: number
+
   pageCount: number
+
   onPage: (p: number) => void
+
   total: number
+
   pageSize: number
 }) {
   if (total === 0) return null
+
   const from = (page - 1) * pageSize + 1
+
   const to = Math.min(total, page * pageSize)
+
   const pages = Array.from({ length: pageCount }, (_, i) => i + 1).filter(
     (p) => p === 1 || p === pageCount || Math.abs(p - page) <= 1,
   )
+
   return (
     <nav
       aria-label="Pagination"
@@ -455,57 +556,90 @@ export function Pagination({
 
 export interface Column<T> {
   key: string
+
   header: string
+
   render: (row: T) => ReactNode
+
   sortValue?: (row: T) => string | number
+
   align?: "left" | "right"
+
   className?: string
 }
 
 export function DataTable<T>({
   rows,
+
   columns,
+
   rowKey,
+
   onRowClick,
+
   pageSize = 10,
+
   empty,
+
   initialSort,
+
   rowLabel,
+
   dense,
 }: {
   rows: T[]
+
   columns: Column<T>[]
+
   rowKey: (r: T) => string
+
   onRowClick?: (r: T) => void
+
   pageSize?: number
+
   empty?: ReactNode
-  initialSort?: { key: string; dir: "asc" | "desc" }
+
+  initialSort?: { key: string dir: "asc" | "desc" }
+
   rowLabel?: (r: T) => string
+
   dense?: boolean
 }) {
   const [sort, setSort] = useState(initialSort)
+
   const [page, setPage] = useState(1)
+
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sort?.key)
+
     if (!col?.sortValue) return rows
+
     const dir = sort!.dir === "asc" ? 1 : -1
+
     return [...rows].sort((a, b) => {
       const va = col.sortValue!(a)
+
       const vb = col.sortValue!(b)
+
       return (va < vb ? -1 : va > vb ? 1 : 0) * dir
     })
   }, [rows, columns, sort])
+
   const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize))
+
   useEffect(() => {
     if (page > pageCount) setPage(1)
   }, [page, pageCount])
+
   const visible = sorted.slice((page - 1) * pageSize, page * pageSize)
+
   const toggle = (key: string) =>
     setSort((s) =>
       s?.key === key
         ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
         : { key, dir: "asc" },
     )
+
   return (
     <div>
       <div className="scrollbar-thin overflow-x-auto">
@@ -514,6 +648,7 @@ export function DataTable<T>({
             <tr className="border-b border-forest/8 bg-[#F8FBF7] text-left">
               {columns.map((c) => {
                 const active = sort?.key === c.key
+
                 return (
                   <th
                     key={c.key}
@@ -617,18 +752,24 @@ export function DataTable<T>({
 /* ============================ Progress timeline =========================== */
 
 export type StepState = "done" | "current" | "upcoming" | "blocked"
+
 export interface TimelineStep {
   label: string
+
   state: StepState
+
   date?: string
+
   description?: string
 }
 
 export function ProgressTimeline({
   steps,
+
   orientation = "responsive",
 }: {
   steps: TimelineStep[]
+
   orientation?: "responsive" | "vertical"
 }) {
   const icon = (s: StepState) =>
@@ -641,6 +782,7 @@ export function ProgressTimeline({
     ) : (
       <Circle className="h-2 w-2 fill-current opacity-40" />
     )
+
   const dot = (s: StepState) =>
     s === "done"
       ? "bg-emerald text-forest"
@@ -649,7 +791,9 @@ export function ProgressTimeline({
         : s === "blocked"
           ? "bg-amber/20 text-[#835400]"
           : "bg-white text-muted border border-forest/15"
+
   const horizontal = orientation === "responsive"
+
   return (
     <ol className={horizontal ? "grid gap-4 md:flex md:gap-0" : "grid gap-4"}>
       {steps.map((s, i) => (
@@ -697,13 +841,16 @@ export function ProgressTimeline({
 
 export function ActivityTimeline({
   items = [],
+
   empty = "No activity yet.",
 }: {
-  items?: { id: string; text: string; actor?: string; at: string }[]
+  items?: { id: string text: string actor?: string at: string }[]
+
   empty?: string
 }) {
   if (!items || !items.length)
     return <p className="py-6 text-center text-sm text-muted">{empty}</p>
+
   return (
     <ol className="relative space-y-4 before:absolute before:top-2 before:bottom-2 before:left-[5px] before:w-px before:bg-forest/10">
       {items.map((a) => (

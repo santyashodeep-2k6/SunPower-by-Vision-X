@@ -624,7 +624,7 @@ export function PortalService() {
   const { db, customer } = usePortalCustomer()
   const { run, pending } = useAction()
   const [creating, setCreating] = useState(false)
-  const [decide, setDecide] = useState<null | { id: string; approve: boolean }>(
+  const [decide, setDecide] = useState<null | { id: string approve: boolean }>(
     null,
   )
   const tickets = db.serviceTickets

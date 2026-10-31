@@ -143,3 +143,4 @@ All 23 collection endpoints specified in `COLLECTION_ENDPOINTS` were audited and
 - **Optimized Re-renders**: All analytical aggregations on `DashboardPage.tsx` and `ReportsPage.tsx` are wrapped with `useMemo` dependency arrays keyed to the reactive store.
 - **Debounced Search**: Search bars in `LeadsTable.tsx` and `InventoryPage.tsx` use a 150ms trailing debounce timer, preventing excessive filtering overhead.
 - **Hydration Resilience**: `hydrate()` in `src/services/core.ts` fetches collections concurrently using `Promise.all` with individual `try/catch` fallbacks, ensuring single-collection latency never blocks initial page presentation.
+

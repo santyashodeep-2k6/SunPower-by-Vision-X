@@ -161,7 +161,7 @@ export function Drawer({
   footer,
   width = "max-w-xl",
   tone = "light",
-}: ModalProps & { width?: string; tone?: "light" | "ai" }) {
+}: ModalProps & { width?: string tone?: "light" | "ai" }) {
   const panelRef = useOverlay(open, onClose)
   const titleId = useId()
   if (!open) return null
@@ -367,7 +367,7 @@ export function DropdownMenu({
   header,
   width = "w-56",
 }: {
-  trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
+  trigger: (props: { open: boolean toggle: () => void }) => ReactNode
   items: MenuItem[]
   align?: "left" | "right"
   header?: ReactNode

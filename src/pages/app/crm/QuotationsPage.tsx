@@ -1,123 +1,199 @@
 import { useMemo, useState } from "react"
+
 import { useNavigate, useSearchParams } from "react-router"
+
 import { Plus } from "lucide-react"
+
 import { fmtDate, inr } from "@/lib/format"
+
 import { PACKAGES } from "@/lib/catalog"
+
 import { useDb } from "@/data/store"
+
 import { createQuotation, effectiveQuoteStatus } from "@/services/crm"
+
 import { useAction } from "@/lib/useAction"
+
 import { PageHeader } from "@/components/layout/PageHeader"
+
 import { Button } from "@/components/ui/Button"
+
 import { StatusBadge } from "@/components/ui/feedback"
+
 import {
   DataTable,
   SearchFilterBar,
   Tabs,
   type Column,
 } from "@/components/ui/data"
+
 import { FormField, SelectInput } from "@/components/ui/forms"
+
 import { Modal } from "@/components/ui/overlays"
 
 const GROUPS: Record<string, string[]> = {
   pending: ["Draft", "Sent", "Awaiting Response"],
+
   Draft: ["Draft"],
+
   sent: ["Sent", "Awaiting Response"],
+
   Accepted: ["Accepted"],
+
   closed: ["Rejected", "Expired"],
 }
 
 export default function QuotationsPage() {
   const db = useDb()
+
   const navigate = useNavigate()
+
   const { run, pending } = useAction()
+
   const [params, setParams] = useSearchParams()
+
   const [q, setQ] = useState("")
+
   const [open, setOpen] = useState(false)
+
   const [surveyId, setSurveyId] = useState("")
+
   const [pkg, setPkg] = useState("")
+
   const status = params.get("status") ?? ""
+
   const rows = useMemo(
     () =>
       db.quotations
+
         .map((x) => {
           const lead = db.leads.find((l) => l.id === x.leadId)
+
           const customer =
             db.customers.find((c) => c.id === x.customerId) ??
             db.customers.find((c) => c.id === x.leadId) ??
-            (lead ? { id: x.customerId, name: (lead as any).fullName || (lead as any).name, phone: (lead as any).phone } : undefined)
+            (lead
+              ? {
+                  id: x.customerId,
+                  name: (lead as any).fullName || (lead as any).name,
+                  phone: (lead as any).phone,
+                }
+              : undefined)
+
           return {
             x,
+
             st: effectiveQuoteStatus(x),
+
             c: customer,
           }
         })
+
         .filter(
           ({ x, st, c }) =>
             (!status || GROUPS[status]?.includes(st)) &&
             (!q ||
-              `${x.id} ${(c as any)?.name ?? ""}`.toLowerCase().includes(q.toLowerCase())),
+              `${x.id} ${(c as any)?.name ?? ""}`
+                .toLowerCase()
+                .includes(q.toLowerCase())),
         ),
+
     [db, status, q],
   )
+
   type Row = typeof rows[number]
+
   const columns: Column<Row>[] = [
     {
       key: "id",
+
       header: "Quotation",
+
       sortValue: (r) => r.x.id,
+
       render: (r) => <span className="font-mono text-[13px]">{r.x.id}</span>,
     },
+
     {
       key: "c",
+
       header: "Customer",
+
       sortValue: (r) => r.c?.name ?? "",
+
       render: (r) => r.c?.name,
     },
+
     {
       key: "pkg",
+
       header: "Package",
+
       render: (r) => `${r.x.capacity} kW ${r.x.systemType}`,
     },
+
     {
       key: "total",
+
       header: "Final amount",
+
       align: "right",
+
       sortValue: (r) => r.x.totals.total,
+
       render: (r) => inr(r.x.totals.total),
     },
+
     {
       key: "valid",
+
       header: "Valid until",
+
       sortValue: (r) => r.x.validUntil,
+
       render: (r) => fmtDate(r.x.validUntil),
     },
+
     {
       key: "created",
+
       header: "Created",
+
       sortValue: (r) => r.x.createdAt,
+
       render: (r) => fmtDate(r.x.createdAt),
     },
+
     {
       key: "st",
+
       header: "Status",
+
       render: (r) => <StatusBadge status={r.st} />,
     },
   ]
+
   const surveys = db.surveys.map((s) => {
     const cust =
       db.customers.find((c) => c.id === s.customerId) ??
       db.customers.find((c) => c.id === s.leadId) ??
       db.leads.find((l) => l.id === s.leadId)
+
     const name = (cust as any)?.name || (cust as any)?.fullName || "Customer"
+
     return {
       value: s.id,
+
       label: `${s.id} — ${name} (${s.status})`,
+
       disabled: s.status !== "Approved",
     }
   })
+
   const count = (k: string) =>
     db.quotations.filter((x) => GROUPS[k].includes(effectiveQuoteStatus(x)))
       .length
+
   return (
     <>
       <PageHeader
@@ -140,10 +216,15 @@ export default function QuotationsPage() {
         onChange={(v) => setParams(v ? { status: v } : {})}
         tabs={[
           { id: "", label: "All", count: db.quotations.length },
+
           { id: "pending", label: "Pending", count: count("pending") },
+
           { id: "Draft", label: "Draft", count: count("Draft") },
+
           { id: "sent", label: "Sent / awaiting", count: count("sent") },
+
           { id: "Accepted", label: "Accepted", count: count("Accepted") },
+
           { id: "closed", label: "Rejected / expired", count: count("closed") },
         ]}
       />
@@ -181,10 +262,14 @@ export default function QuotationsPage() {
               onClick={() =>
                 run(
                   "create",
+
                   () => createQuotation(surveyId, pkg || undefined),
+
                   (id) => `Draft ${id} created`,
                 )
+
                   .then((id) => navigate(`/app/quotations/${id}`))
+
                   .catch(() => undefined)
               }
             >

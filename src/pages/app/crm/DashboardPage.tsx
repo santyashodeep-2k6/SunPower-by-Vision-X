@@ -1,5 +1,7 @@
 import { useMemo } from "react"
+
 import { Link } from "react-router"
+
 import {
   Bar,
   BarChart,
@@ -12,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+
 import {
   CalendarClock,
   ClipboardCheck,
@@ -21,72 +24,111 @@ import {
   Percent,
   Users,
 } from "lucide-react"
+
 import { useDb, useSession } from "@/data/store"
+
 import { relative } from "@/lib/format"
+
 import { effectiveQuoteStatus } from "@/services/crm"
+
 import { PageHeader } from "@/components/layout/PageHeader"
+
 import {
   ActivityTimeline,
   ChartCard,
   Panel,
   StatCard,
 } from "@/components/ui/data"
+
 import { DemoBadge } from "@/components/ui/feedback"
+
 import { JourneyGuide } from "@/components/special/JourneyGuide"
+
 import { AIAssistantInsightsCard } from "@/components/special/AIAssistantInsightsCard"
-import { CustomerPhasePriorityCard, resolveCustomerPhase } from "@/components/special/CustomerPhasePriorityCard"
+
+import {
+  CustomerPhasePriorityCard,
+  resolveCustomerPhase,
+} from "@/components/special/CustomerPhasePriorityCard"
+
 import { LEAD_STATUSES, LeadsTable } from "./LeadsTable"
 
 export const CHART_COLORS = [
   "#103D2D",
+
   "#217A50",
+
   "#38B878",
+
   "#F4C542",
+
   "#E7A934",
+
   "#9DB8A8",
+
   "#C9D9CF",
 ]
 
 export default function DashboardPage() {
   const db = useDb()
+
   const session = useSession()
+
   const user = db.users.find((u) => u.id === session?.userId)
+
   const k = useMemo(() => {
     const won = db.leads.filter((l) => l.status === "Won").length
+
     const lost = db.leads.filter((l) => l.status === "Lost").length
+
     return {
       total: db.leads.length,
+
       fresh: db.leads.filter((l) => l.status === "New").length,
+
       review: db.leads.filter((l) => ["New", "Contacted"].includes(l.status))
         .length,
+
       surveys: db.surveys.filter((s) => s.status === "Scheduled").length,
+
       quotes: db.quotations.filter((q) =>
         ["Draft", "Sent", "Awaiting Response"].includes(
           effectiveQuoteStatus(q),
         ),
       ).length,
+
       conversion: won + lost ? Math.round((won / (won + lost)) * 100) : 0,
+
       won,
+
       lost,
     }
   }, [db])
+
   const byStatus = LEAD_STATUSES.map((s) => ({
     status: s,
+
     count: db.leads.filter((l) => l.status === s).length,
   }))
+
   const bySource = Object.entries(
     db.leads.reduce<Record<string, number>>(
       (a, l) => ((a[l.source] = (a[l.source] ?? 0) + 1), a),
+
       {},
     ),
   ).map(([name, value]) => ({ name, value }))
+
   const highPriorityCount = db.customers.filter(
-    (c) => resolveCustomerPhase(c, db).priority === "Highest"
+    (c) => resolveCustomerPhase(c, db).priority === "Highest",
   ).length
 
   const followUps = db.leads
+
     .filter((l) => l.followUpAt && !["Won", "Lost"].includes(l.status))
+
     .sort((a, b) => a.followUpAt!.localeCompare(b.followUpAt!))
+
     .slice(0, 5)
 
   return (
@@ -187,6 +229,7 @@ export default function DashboardPage() {
                   cursor={{ fill: "rgb(16 61 45 / 0.04)" }}
                   contentStyle={{
                     borderRadius: 12,
+
                     border: "1px solid #E3EAE2",
                   }}
                 />
@@ -230,6 +273,7 @@ export default function DashboardPage() {
                 <Tooltip
                   contentStyle={{
                     borderRadius: 12,
+
                     border: "1px solid #E3EAE2",
                   }}
                 />

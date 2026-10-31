@@ -167,7 +167,7 @@ export function createTicket(input: TicketInput) {
 }
 
 const tlog = (
-  t: { log: { id: string; text: string; authorName: string; at: string }[] },
+  t: { log: { id: string text: string authorName: string at: string }[] },
   text: string,
   who: string,
 ) => t.log.unshift({ id: uid(), text, authorName: who, at: nowIso() })
@@ -317,7 +317,7 @@ export function recordRepair(
     action: Repair["action"]
     notes: string
     replacementSerial?: string
-    parts: { productId: string; qty: number }[]
+    parts: { productId: string qty: number }[]
     labourHours: number
   },
 ) {

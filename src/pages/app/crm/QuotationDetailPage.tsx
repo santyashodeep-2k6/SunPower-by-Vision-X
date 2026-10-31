@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react"
+
 import { Link, useNavigate, useParams } from "react-router"
+
 import { CheckCircle2, Eye, Receipt, Save, Send, XCircle } from "lucide-react"
+
 import type { Payment } from "@/lib/types"
+
 import { CATEGORY_ORDER, PACKAGES, computeTotals } from "@/lib/catalog"
+
 import { fmtDate, inr } from "@/lib/format"
+
 import { quotationHtml } from "@/lib/documents"
+
 import { useDb } from "@/data/store"
+
 import {
   acceptQuotation,
   convertToSalesOrder,
@@ -14,47 +22,69 @@ import {
   sendQuotation,
   updateQuotationDraft,
 } from "@/services/crm"
+
 import { useAction } from "@/lib/useAction"
+
 import { PageHeader } from "@/components/layout/PageHeader"
+
 import { Button, ButtonLink } from "@/components/ui/Button"
+
 import {
   Callout,
   DemoBadge,
   EmptyState,
   StatusBadge,
 } from "@/components/ui/feedback"
+
 import { Panel } from "@/components/ui/data"
+
 import { FormField, SelectInput, TextInput } from "@/components/ui/forms"
+
 import { ConfirmationDialog, Modal } from "@/components/ui/overlays"
+
 import { DocumentPreview } from "@/components/special/DocumentPreview"
 
 export default function QuotationDetailPage() {
   const { id } = useParams()
+
   const db = useDb()
+
   const navigate = useNavigate()
+
   const { run, fire, pending } = useAction()
+
   const quote = db.quotations.find((q) => q.id === id)
+
   const [qty, setQty] = useState<Record<string, string>>({})
+
   const [modal, setModal] =
     useState<null | "preview" | "reject" | "accept" | "convert">(null)
+
   const [pay, setPay] = useState<{
     amount: string
+
     method: Payment["method"]
+
     reference: string
   }>({ amount: "", method: "UPI", reference: "" })
+
   useEffect(() => {
     setQty({})
   }, [quote?.packageId, quote?.status])
+
   const items = useMemo(
     () =>
       quote
         ? quote.items.map((i) => ({
             ...i,
+
             qty: qty[i.id] !== undefined ? Number(qty[i.id]) || 0 : i.qty,
           }))
         : [],
+
     [quote, qty],
   )
+
   if (!quote)
     return (
       <EmptyState
@@ -66,49 +96,72 @@ export default function QuotationDetailPage() {
         }
       />
     )
+
   const status = effectiveQuoteStatus(quote)
+
   const draft = quote.status === "Draft"
+
   const dirty = Object.keys(qty).length > 0
+
   const totals = dirty
     ? computeTotals(items, quote.labour, quote.otherCharges, db.settings)
     : quote.totals
+
   const lead = db.leads.find((l) => l.id === quote.leadId)
+
   const c =
     db.customers.find((x) => x.id === quote.customerId) ??
     db.customers.find((x) => x.id === quote.leadId) ??
     (lead
       ? {
           id: quote.customerId || lead.customerId || lead.id,
+
           name: (lead as any).fullName || (lead as any).name || "Customer",
+
           phone: (lead as any).phone || "",
+
           email: (lead as any).email || "",
+
           language: "English",
+
           contactMethod: "Phone" as const,
+
           createdAt: lead.createdAt || new Date().toISOString(),
         }
       : {
           id: quote.customerId || "CUS-DEFAULT",
+
           name: "Registered Customer",
+
           phone: "",
+
           email: undefined,
+
           language: "English",
+
           contactMethod: "Phone" as const,
+
           createdAt: new Date().toISOString(),
         })
+
   const survey = db.surveys.find((s) => s.id === quote.surveyId)
+
   const sorted = [...items].sort(
     (a, b) =>
       CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category),
   )
+
   const saveDraft = () =>
     fire(
       "save",
+
       () =>
         updateQuotationDraft(quote.id, {
           qty: Object.fromEntries(
             Object.entries(qty).map(([k, v]) => [k, Number(v)]),
           ),
         }),
+
       "Draft saved",
     )
 
@@ -159,7 +212,9 @@ export default function QuotationDetailPage() {
                 onClick={() =>
                   fire(
                     "send",
+
                     () => sendQuotation(quote.id),
+
                     "Quotation sent to customer",
                   )
                 }
@@ -195,7 +250,9 @@ export default function QuotationDetailPage() {
                 onClick={() => (
                   setPay({
                     amount: String(quote.totals.advance),
+
                     method: "UPI",
+
                     reference: "",
                   }),
                   setModal("convert")
@@ -252,10 +309,12 @@ export default function QuotationDetailPage() {
                   onChange={(e) =>
                     fire(
                       "pkg",
+
                       () =>
                         updateQuotationDraft(quote.id, {
                           packageId: e.target.value,
                         }),
+
                       "Package changed — BOM regenerated",
                     )
                   }
@@ -303,6 +362,7 @@ export default function QuotationDetailPage() {
                           onChange={(e) =>
                             setQty({
                               ...qty,
+
                               [i.id]: e.target.value.replace(/\D/g, ""),
                             })
                           }
@@ -371,14 +431,20 @@ export default function QuotationDetailPage() {
           <dl className="space-y-2 text-sm">
             {[
               ["Equipment cost", totals.equipment],
+
               ["Labour cost", totals.labour],
+
               ["Other charges", totals.other],
+
               [
                 `GST on equipment (${db.settings.equipmentTaxPct}%)`,
+
                 totals.equipmentTax,
               ],
+
               [
                 `GST on services (${db.settings.serviceTaxPct}%)`,
+
                 totals.serviceTax,
               ],
             ].map(([k, v]) => (
@@ -448,7 +514,9 @@ export default function QuotationDetailPage() {
         onConfirm={(r) =>
           run(
             "reject",
+
             () => rejectQuotation(quote.id, r),
+
             "Quotation rejected",
           )
         }
@@ -469,15 +537,21 @@ export default function QuotationDetailPage() {
               onClick={() =>
                 run(
                   "convert",
+
                   () =>
                     convertToSalesOrder(quote.id, {
                       amount: Number(pay.amount),
+
                       method: pay.method,
+
                       reference: pay.reference,
                     }),
+
                   (so) => `Sales order ${so} created`,
                 )
+
                   .then((so) => navigate(`/app/orders/${so}`))
+
                   .catch(() => undefined)
               }
             >

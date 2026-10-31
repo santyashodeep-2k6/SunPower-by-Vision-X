@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/types"
+
 import { getDatabaseContextForGemini } from "./dbLookup"
 
 const GEMINI_LOCAL_KEY = "sunflow_gemini_api_key"
@@ -6,12 +7,16 @@ const GEMINI_LOCAL_KEY = "sunflow_gemini_api_key"
 export function getGeminiApiKey(): string | null {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem(GEMINI_LOCAL_KEY)
+
     if (saved && saved.trim()) return saved.trim()
   }
+
   const envKey = import.meta.env.VITE_GEMINI_API_KEY
+
   if (envKey && typeof envKey === "string" && envKey.trim()) {
     return envKey.trim()
   }
+
   return null
 }
 
@@ -77,31 +82,40 @@ COMMUNICATION STYLE:
 
 export async function callGeminiChat(
   messages: ChatMessage[],
+
   preferredLanguage: string = "English",
 ): Promise<string> {
   const apiKey = getGeminiApiKey()
+
   if (!apiKey) {
     throw new Error("No Gemini API key configured.")
   }
 
   // Build Gemini contents payload from chat history
+
   const contents = messages
+
     .filter((m) => m.from === "customer" || m.from === "assistant")
+
     .slice(-8) // last 8 messages for context
+
     .map((m) => ({
       role: m.from === "customer" ? "user" : "model",
+
       parts: [{ text: m.text }],
     }))
 
   if (contents.length === 0) {
     contents.push({
       role: "user",
+
       parts: [{ text: "Hello, tell me about rooftop solar." }],
     })
   }
 
   const lastCustomerText =
     messages.filter((m) => m.from === "customer").at(-1)?.text || ""
+
   const dbContext = getDatabaseContextForGemini(lastCustomerText)
 
   const langInstruction =
@@ -111,6 +125,7 @@ export async function callGeminiChat(
 
   const body = {
     contents,
+
     systemInstruction: {
       parts: [
         {
@@ -118,35 +133,46 @@ export async function callGeminiChat(
         },
       ],
     },
+
     generationConfig: {
       temperature: 0.6,
+
       maxOutputTokens: 800,
     },
   }
 
   // Try gemini-2.0-flash, fallback to gemini-1.5-flash
+
   const models = ["gemini-2.0-flash", "gemini-1.5-flash"]
+
   let lastError: any = null
 
   for (const model of models) {
     try {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+
         {
           method: "POST",
+
           headers: { "Content-Type": "application/json" },
+
           body: JSON.stringify(body),
         },
       )
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
+
         const msg = errorData?.error?.message || `HTTP ${res.status}`
+
         throw new Error(`Gemini API Error: ${msg}`)
       }
 
       const data = await res.json()
+
       const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text
+
       if (answer && typeof answer === "string") {
         return answer.trim()
       }
@@ -157,4 +183,3 @@ export async function callGeminiChat(
 
   throw lastError || new Error("Failed to generate response from Gemini API.")
 }
-

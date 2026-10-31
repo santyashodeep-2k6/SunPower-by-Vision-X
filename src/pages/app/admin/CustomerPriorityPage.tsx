@@ -1,9 +1,12 @@
 import { useDb } from "@/data/store"
+
 import { PageHeader } from "@/components/layout/PageHeader"
+
 import { CustomerPhasePriorityCard } from "@/components/special/CustomerPhasePriorityCard"
 
 export default function CustomerPriorityPage() {
   const db = useDb()
+
   return (
     <>
       <PageHeader

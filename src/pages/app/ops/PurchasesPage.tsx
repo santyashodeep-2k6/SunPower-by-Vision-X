@@ -33,7 +33,7 @@ export default function PurchasesPage() {
   const [openPo, setOpenPo] = useState<string | null>(null)
   const [creating, setCreating] = useState<null | {
     supplierId: string
-    lines: { productId: string; qty: string }[]
+    lines: { productId: string qty: string }[]
     reason: string
   }>(null)
   const [receipt, setReceipt] = useState<Record<string, string>>({})

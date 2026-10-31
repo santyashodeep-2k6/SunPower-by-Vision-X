@@ -70,7 +70,7 @@ export function checkAndReserveStock(salesOrderId: string) {
       if (!["Confirmed", "Awaiting Stock"].includes(so.status))
         return {
           reserved: so.status === "Stock Reserved",
-          shortages: [] as { productId: string; shortage: number }[],
+          shortages: [] as { productId: string shortage: number }[],
         }
       const check = orderStockCheck(db, salesOrderId)
       const shortages = check
@@ -133,7 +133,7 @@ export function raiseShortagePurchase(salesOrderId: string) {
           p.status !== "Received" &&
           p.status !== "Cancelled",
       )
-      const bySupplier = new Map<string, { productId: string; qty: number }[]>()
+      const bySupplier = new Map<string, { productId: string qty: number }[]>()
       for (const s of shortages) {
         const covered = existing
           .flatMap((p) => p.lines)
@@ -192,7 +192,7 @@ export function raiseShortagePurchase(salesOrderId: string) {
 
 export function createPurchaseRequest(input: {
   supplierId: string
-  lines: { productId: string; qty: number }[]
+  lines: { productId: string qty: number }[]
   reason: string
 }) {
   return command(
@@ -690,7 +690,8 @@ export function scheduleInstallation(
             other.crew.some((c) => c.technicianId === member.technicianId),
         )
         if (conflict) {
-          const techName = byId(db.users, member.technicianId)?.name ?? member.technicianId
+          const techName =
+            byId(db.users, member.technicianId)?.name ?? member.technicianId
           rule(
             "CREW_DOUBLE_BOOKED",
             `Technician ${techName} is already assigned to ${conflict.reference} on this date.`,

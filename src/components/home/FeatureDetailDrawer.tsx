@@ -19,8 +19,8 @@ export type FeatureKey = "smart" | "care" | "journey"
 const CONTENT: Record<FeatureKey, {
   title: string
   lead: string
-  points: { icon: typeof Cpu; title: string; body: string }[]
-  cta: { label: string; to: string }
+  points: { icon: typeof Cpu title: string body: string }[]
+  cta: { label: string to: string }
 }> = {
   smart: {
     title: "Smart Solar",

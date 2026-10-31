@@ -119,7 +119,7 @@ export default function LeadDetailPage() {
       : null
   const closed = lead.status === "Won" || lead.status === "Lost"
 
-  const tabs: { id: Tab; label: string; count?: number }[] = [
+  const tabs: { id: Tab label: string count?: number }[] = [
     { id: "overview", label: "Overview" },
     { id: "ai", label: "AI Summary" },
     { id: "conversation", label: "Conversation", count: convs.length },

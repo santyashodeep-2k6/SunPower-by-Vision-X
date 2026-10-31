@@ -1,5 +1,7 @@
 import { useState } from "react"
+
 import { Link, useNavigate, useParams } from "react-router"
+
 import {
   CalendarClock,
   CheckCircle2,
@@ -9,9 +11,13 @@ import {
   UserCog,
   XCircle,
 } from "lucide-react"
+
 import type { Assessment } from "@/lib/types"
+
 import { fmtDateTime, relative, toInputDateTime } from "@/lib/format"
+
 import { useDb, useSession } from "@/data/store"
+
 import {
   addSurveyNote,
   addSurveyPhoto,
@@ -23,13 +29,21 @@ import {
   saveAssessment,
   submitSurvey,
 } from "@/services/crm"
+
 import { SAMPLE_PHOTOS } from "@/data/seed"
+
 import { useAction } from "@/lib/useAction"
+
 import { useToast } from "@/components/ui/overlays"
+
 import { PageHeader } from "@/components/layout/PageHeader"
+
 import { Button, ButtonLink } from "@/components/ui/Button"
+
 import { Callout, EmptyState, StatusBadge } from "@/components/ui/feedback"
+
 import { KeyValueGrid, Panel } from "@/components/ui/data"
+
 import {
   DatePicker,
   FileUploader,
@@ -37,49 +51,75 @@ import {
   SelectInput,
   TextInput,
 } from "@/components/ui/forms"
+
 import { ConfirmationDialog, Modal } from "@/components/ui/overlays"
+
 import { TextModal } from "./LeadDetailPage"
 
 const EMPTY: Assessment = {
   roofArea: 0,
+
   orientation: "South",
+
   tilt: 18,
+
   shading: "Minimal",
+
   roofStructure: "RCC",
+
   electricalSetup: "Single Phase",
+
   cableDistance: 20,
+
   recommendedCapacity: 3,
+
   recommendedType: "On-Grid",
 }
 
 export default function SurveyDetailPage() {
   const { id } = useParams()
+
   const db = useDb()
+
   const session = useSession()
+
   const navigate = useNavigate()
+
   const toast = useToast()
+
   const { run, fire, pending } = useAction()
+
   const survey = db.surveys.find((s) => s.id === id)
+
   const [form, setForm] = useState<Record<keyof Assessment, string>>(() => {
     const a = survey?.assessment ?? {
       ...EMPTY,
+
       roofArea: db.leads.find((l) => l.id === survey?.leadId)?.roofArea ?? 0,
+
       recommendedCapacity:
         db.leads.find((l) => l.id === survey?.leadId)?.preferredCapacity ?? 3,
+
       recommendedType:
         db.leads.find((l) => l.id === survey?.leadId)?.systemType ?? "On-Grid",
     }
+
     return Object.fromEntries(
       Object.entries(a).map(([k, v]) => [k, String(v || "")]),
     ) as Record<keyof Assessment, string>
   })
+
   const [tried, setTried] = useState(false)
+
   const [modal, setModal] =
     useState<null | "assign" | "reschedule" | "approve" | "reject" | "revisit" | "note">(
       null,
     )
+
   const [surveyorId, setSurveyorId] = useState(survey?.surveyorId ?? "")
+
   const [when, setWhen] = useState(toInputDateTime(survey?.scheduledAt))
+
   if (!survey)
     return (
       <EmptyState
@@ -91,71 +131,114 @@ export default function SurveyDetailPage() {
         }
       />
     )
+
   const c = db.customers.find((x) => x.id === survey.customerId) ?? {
-    id: survey.customerId || 'CUS-DEFAULT',
-    name: (survey as any).customerName || 'Customer',
-    phone: (survey as any).customerPhone || '',
+    id: survey.customerId || "CUS-DEFAULT",
+
+    name: (survey as any).customerName || "Customer",
+
+    phone: (survey as any).customerPhone || "",
+
     email: (survey as any).customerEmail,
-    language: 'English',
-    contactMethod: 'Phone' as const,
+
+    language: "English",
+
+    contactMethod: "Phone" as const,
+
     createdAt: (survey as any).createdAt || new Date().toISOString(),
   }
+
   const site = db.sites.find((x) => x.id === survey.siteId) ?? {
-    id: survey.siteId || 'SITE-DEFAULT',
+    id: survey.siteId || "SITE-DEFAULT",
+
     customerId: c.id,
-    propertyType: 'Residential' as const,
-    address: (survey as any).siteAddress || 'Site address',
-    city: 'Pune',
-    state: 'Maharashtra',
-    pin: '411033',
+
+    propertyType: "Residential" as const,
+
+    address: (survey as any).siteAddress || "Site address",
+
+    city: "Pune",
+
+    state: "Maharashtra",
+
+    pin: "411033",
   }
+
   const lead = db.leads.find((l) => l.id === survey.leadId)
+
   const quotes = (db.quotations || []).filter((q) => q.surveyId === survey.id)
+
   const editable = ["Scheduled", "Revisit Requested"].includes(survey.status)
+
   const canDecide = session?.role === "admin" || session?.role === "sales"
 
   const num = (k: keyof Assessment) => Number(form[k])
+
   const errors: Partial<Record<keyof Assessment, string>> = {}
+
   if (!(num("roofArea") > 20))
     errors.roofArea = "Measured roof area is required (sq ft)."
+
   if (!(num("tilt") >= 0 && num("tilt") <= 60))
     errors.tilt = "Tilt must be between 0° and 60°."
+
   if (!(num("cableDistance") > 0 && num("cableDistance") <= 200))
     errors.cableDistance = "Cable distance must be 1–200 m."
+
   const roofTight =
     num("roofArea") > 0 && num("recommendedCapacity") * 80 > num("roofArea")
+
   const assessment = (): Assessment => ({
     roofArea: num("roofArea"),
+
     orientation: form.orientation as Assessment["orientation"],
+
     tilt: num("tilt"),
+
     shading: form.shading as Assessment["shading"],
+
     roofStructure: form.roofStructure as Assessment["roofStructure"],
+
     electricalSetup: form.electricalSetup as Assessment["electricalSetup"],
+
     cableDistance: num("cableDistance"),
+
     recommendedCapacity: num("recommendedCapacity"),
+
     recommendedType: form.recommendedType as Assessment["recommendedType"],
   })
+
   const valid = Object.keys(errors).length === 0
+
   const save = async (andSubmit: boolean) => {
     setTried(true)
+
     if (!valid)
       return toast({ tone: "error", title: "Check the highlighted fields" })
+
     await run(
       "save",
+
       () => saveAssessment(survey.id, assessment()),
+
       andSubmit ? undefined : "Assessment saved",
     ).catch(() => null)
+
     if (andSubmit)
       await run(
         "submit",
+
         () => submitSurvey(survey.id),
+
         "Submitted for approval",
       ).catch(() => null)
   }
+
   const quoteBlock =
     survey.status !== "Approved"
       ? `Survey is ${survey.status.toLowerCase()}. A final quotation can only be generated after approval.`
       : null
+
   const sel = (k: keyof Assessment, options: string[]) => (
     <SelectInput
       value={form[k]}
@@ -164,6 +247,7 @@ export default function SurveyDetailPage() {
       options={options}
     />
   )
+
   const inp = (k: keyof Assessment, suffix?: string) => (
     <TextInput
       inputMode="numeric"
@@ -218,10 +302,14 @@ export default function SurveyDetailPage() {
               onClick={() =>
                 run(
                   "quote",
+
                   () => createQuotation(survey.id),
+
                   (q) => `Draft ${q} created`,
                 )
+
                   .then((q) => navigate(`/app/quotations/${q}`))
+
                   .catch(() => undefined)
               }
             >
@@ -348,10 +436,15 @@ export default function SurveyDetailPage() {
               <FormField label="Orientation" required>
                 {sel("orientation", [
                   "South",
+
                   "South-East",
+
                   "South-West",
+
                   "East",
+
                   "West",
+
                   "Flat",
                 ])}
               </FormField>
@@ -368,8 +461,11 @@ export default function SurveyDetailPage() {
               <FormField label="Roof structure" required>
                 {sel("roofStructure", [
                   "RCC",
+
                   "Metal Sheet",
+
                   "Asbestos",
+
                   "Tiled",
                 ])}
               </FormField>
@@ -392,6 +488,7 @@ export default function SurveyDetailPage() {
                   }
                   options={["1", "2", "3", "4", "5"].map((v) => ({
                     value: v,
+
                     label: `${v} kW`,
                   }))}
                 />
@@ -429,6 +526,7 @@ export default function SurveyDetailPage() {
               }
               samplePhotos={SAMPLE_PHOTOS.roof.map((url, i) => ({
                 url,
+
                 caption: i ? "Meter & cable route" : "Roof overview",
               }))}
               onError={(m) => toast({ tone: "error", title: m })}
@@ -444,15 +542,22 @@ export default function SurveyDetailPage() {
               columns={2}
               items={[
                 { label: "Customer", value: c.name },
+
                 { label: "Mobile", value: c.phone },
+
                 { label: "Address", value: site.address },
+
                 { label: "City", value: `${site.city} ${site.pin}` },
+
                 {
                   label: "Monthly bill",
+
                   value: lead?.monthlyBill ? `₹${lead.monthlyBill}` : undefined,
                 },
+
                 {
                   label: "Requested",
+
                   value: lead?.preferredCapacity
                     ? `${lead.preferredCapacity} kW ${lead.systemType ?? ""}`
                     : "Recommend",
@@ -510,10 +615,14 @@ export default function SurveyDetailPage() {
             onClick={() =>
               run(
                 "assign",
+
                 () => assignSurveyor(survey.id, surveyorId),
+
                 "Surveyor assigned",
               )
+
                 .then(() => setModal(null))
+
                 .catch(() => undefined)
             }
           >
@@ -527,7 +636,9 @@ export default function SurveyDetailPage() {
             onChange={(e) => setSurveyorId(e.target.value)}
             placeholder="Select…"
             options={db.users
+
               .filter((u) => u.role === "surveyor")
+
               .map((u) => ({ value: u.id, label: u.name }))}
           />
         </FormField>
@@ -544,10 +655,14 @@ export default function SurveyDetailPage() {
             onClick={() =>
               run(
                 "resched",
+
                 () => rescheduleSurvey(survey.id, new Date(when).toISOString()),
+
                 "Survey rescheduled",
               )
+
                 .then(() => setModal(null))
+
                 .catch(() => undefined)
             }
           >
@@ -573,7 +688,9 @@ export default function SurveyDetailPage() {
         onConfirm={(n) =>
           run(
             "decide",
+
             () => decideSurvey(survey.id, "approve", n),
+
             "Survey approved — quotation unlocked",
           )
         }
@@ -590,7 +707,9 @@ export default function SurveyDetailPage() {
         onConfirm={(n) =>
           run(
             "decide",
+
             () => decideSurvey(survey.id, "reject", n),
+
             "Survey rejected",
           )
         }
@@ -607,7 +726,9 @@ export default function SurveyDetailPage() {
         onConfirm={(n) =>
           run(
             "decide",
+
             () => decideSurvey(survey.id, "revisit", n),
+
             "Revisit requested",
           )
         }

@@ -6,7 +6,9 @@
 */
 
 export const API_BASE_URL =
-  ((typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.VITE_SUNFLOW_API_URL : process.env.VITE_SUNFLOW_API_URL) as string | undefined)?.replace(
+  ((typeof import.meta !== "undefined" && import.meta.env
+    ? import.meta.env.VITE_SUNFLOW_API_URL
+    : process.env.VITE_SUNFLOW_API_URL) as string | undefined)?.replace(
     /\/$/,
     "",
   ) || undefined
