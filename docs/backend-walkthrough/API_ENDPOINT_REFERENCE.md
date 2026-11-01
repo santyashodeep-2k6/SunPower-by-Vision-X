@@ -4,7 +4,7 @@ This reference documents the REST APIs exposed by the Spring Boot backend (`http
 
 ---
 
-## 1. Authentication & Session APIs (`/api/auth`)
+## 1. Authentication & Session APIs (`/api/auth`) auth flow
 
 | Method | Endpoint | Access | Request Body | Response Body | Description |
 |---|---|---|---|---|---|
