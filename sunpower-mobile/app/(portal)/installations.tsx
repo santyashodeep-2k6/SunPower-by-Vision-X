@@ -669,9 +669,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     flexShrink: 1,
+    overflow: 'hidden',
   },
   milestoneCard: {
     padding: 12,
+    overflow: 'hidden',
   },
   activeMilestoneCard: {
     borderColor: '#10B981',

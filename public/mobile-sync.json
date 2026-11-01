@@ -1,0 +1,34 @@
+[
+  {
+    "id": "test_conv_20261101071402",
+    "receivedAt": "2026-11-01T01:44:04.694Z",
+    "payload": {
+      "capacity": 5,
+      "systemType": "On-Grid",
+      "customerPhone": "9988776655",
+      "city": "Pune",
+      "customerName": "Test Mobile User",
+      "conversationId": "test_conv_20261101071402",
+      "monthlyBill": 3500,
+      "callDurationSeconds": 120,
+      "language": "English",
+      "messages": [
+        {
+          "time": "10:00 AM",
+          "text": "Hi, I want to install solar panels",
+          "role": "user"
+        },
+        {
+          "time": "10:01 AM",
+          "text": "I can help with solar installation. What is your monthly electricity bill?",
+          "role": "agent"
+        },
+        {
+          "time": "10:02 AM",
+          "text": "Around 3500 per month",
+          "role": "user"
+        }
+      ]
+    }
+  }
+]

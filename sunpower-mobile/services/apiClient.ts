@@ -7,8 +7,14 @@ const DEFAULT_API_URL = Platform.OS === 'android'
   ? 'http://10.0.2.2:8081/api' 
   : 'http://localhost:8081/api';
 
-export const API_BASE_URL = 
-  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) || DEFAULT_API_URL;
+export const API_BASE_URL = (() => {
+  try {
+    // @ts-ignore – Expo injects EXPO_PUBLIC_* at build time
+    const envUrl = process?.env?.EXPO_PUBLIC_API_URL;
+    if (envUrl) return envUrl;
+  } catch { /* ignore */ }
+  return DEFAULT_API_URL;
+})();
 
 export const ELEVENLABS_DEFAULT_AGENT_ID = 'agent_4301m68j84sdfnzty10t96p2qt8y';
 
@@ -324,6 +330,35 @@ class ApiClientService {
         ],
       },
     ];
+  }
+
+  // 6. Save Mobile AI Conversation to Main CRM Database
+  // This method is a convenience wrapper — the actual sync logic lives in crmSync.ts
+  async saveMobileConversationToCRM(payload: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    city: string;
+    language: string;
+    messages: { role: 'agent' | 'user'; text: string; time: string }[];
+    callDurationSeconds: number;
+    conversationId: string;
+  }): Promise<{ success: boolean; leadId?: string }> {
+    // Try REST API first for live backend
+    const res = await this.request<{ status: string; leadId: string; conversationId: string }>(
+      '/v1/mobile/ai-conversation',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (res.fromBackend && res.data?.leadId) {
+      return { success: true, leadId: res.data.leadId };
+    }
+
+    // If backend is offline, the crmSync.ts handles localStorage fallback
+    return { success: false };
   }
 
   // Logout

@@ -13,6 +13,8 @@ import { Clay3DCard } from '@/components/ui/Clay3DCard';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { colors, typography, spacing, borderRadius } from '@/theme';
+import { SafeStorage } from '@/services/storage';
+import { syncMobileConversationToCRM } from '@/services/crmSync';
 
 export default function SolarCalculatorScreen() {
   const router = useRouter();
@@ -55,10 +57,63 @@ export default function SolarCalculatorScreen() {
   const co2OffsetTons = Math.round(recommendedKw * 1.3 * 10) / 10;
   const treesPlanted = Math.round(co2OffsetTons * 45);
 
-  const handleRequestQuote = () => {
+  const handleRequestQuote = async () => {
+    let userName = 'Rahul Sharma';
+    let userPhone = '9876543210';
+    let userEmail = 'rahul@gmail.com';
+    let userCity = 'Pune';
+
+    try {
+      const profileRaw = await SafeStorage.getItem('user_profile');
+      const dataRaw = await SafeStorage.getItem('user_data');
+      if (profileRaw) {
+        const p = JSON.parse(profileRaw);
+        userName = p.fullName || p.name || userName;
+        userPhone = p.phone || userPhone;
+        userEmail = p.email || userEmail;
+      } else if (dataRaw) {
+        const d = JSON.parse(dataRaw);
+        userName = d.name || userName;
+        userPhone = d.phone || userPhone;
+      }
+    } catch {}
+
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const convId = `CALC-LEAD-${Date.now().toString(36).toUpperCase()}`;
+
+    // Create lead in CRM database
+    const syncRes = await syncMobileConversationToCRM({
+      customerName: userName,
+      customerPhone: userPhone,
+      customerEmail: userEmail,
+      city: userCity,
+      language: 'English',
+      propertyType: 'Residential',
+      monthlyBill,
+      roofArea,
+      capacity: recommendedKw,
+      systemType: 'On-Grid',
+      callDurationSeconds: 0,
+      conversationId: convId,
+      messages: [
+        {
+          role: 'user',
+          text: `Calculated solar requirement: Monthly bill ₹${monthlyBill.toLocaleString('en-IN')}, Roof area ${roofArea} sq.ft. Recommended system: ${recommendedKw} kW.`,
+          time: now,
+        },
+        {
+          role: 'agent',
+          text: `System quote: ${recommendedKw} kW On-Grid. Est Investment: ₹${netInvestment.toLocaleString('en-IN')} (Subsidy: ₹${subsidy.toLocaleString('en-IN')}). Expected Annual Savings: ₹${annualSavings.toLocaleString('en-IN')}.`,
+          time: now,
+        },
+      ],
+    });
+
+    const leadRef = syncRes.leadId ? ` (${syncRes.leadId})` : '';
+
     Alert.alert(
       'Site Survey & Quotation Confirmed! ☀️',
-      `Engineering specifications for a ${recommendedKw} kW system with ₹${subsidy.toLocaleString()} subsidy have been submitted. A solar technician will contact you within 2 business hours.`,
+      `Engineering specifications for a ${recommendedKw} kW system with ₹${subsidy.toLocaleString()} subsidy have been submitted directly to the SunFlow 360 Sales CRM${leadRef}. Our technical advisor will contact you within 2 hours.`,
       [{ text: 'View Documents', onPress: () => router.push('/documents' as any) }]
     );
   };

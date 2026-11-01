@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
       figmaReactRefreshBoundaryFallback(),
       figmaMakeKitPlugin({ storiesGlob: "/src/**/*.stories.{ts,tsx,js,jsx}" }),
       figmaLinkedPackageSourcemaps(),
+      sunflowMobileSyncPlugin(),
     ],
     resolve: {
       alias: {
@@ -532,3 +533,149 @@ function figmaLinkedPackageSourcemaps(): Plugin {
     },
   }
 }
+
+/**
+ * Handles mobile sync, voice webhook, and ephemeral token endpoints
+ * to bridge mobile AI assistant conversations directly into the CRM database.
+ */
+function sunflowMobileSyncPlugin(): Plugin {
+  return {
+    name: "sunflow-mobile-sync-api",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        // Full CORS support
+        res.setHeader("Access-Control-Allow-Origin", "*")
+        res.setHeader(
+          "Access-Control-Allow-Methods",
+          "GET, POST, PUT, DELETE, OPTIONS",
+        )
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization, elevenlabs-signature, Accept",
+        )
+
+        if (req.method === "OPTIONS") {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        const url = req.url?.split("?")[0]
+
+        // 1. ElevenLabs Voice Token API
+        if (
+          url === "/api/voice/token" ||
+          url === "/api/v1/voice/token" ||
+          url === "/v1/voice/token"
+        ) {
+          res.setHeader("Content-Type", "application/json")
+          res.end(
+            JSON.stringify({
+              ephemeralToken: `session_${Date.now().toString(36)}`,
+              agentId: "agent_4301m68j84sdfnzty10t96p2qt8y",
+              expiresAt: new Date(Date.now() + 3600000).toISOString(),
+            }),
+          )
+          return
+        }
+
+        // 2. ElevenLabs Post-call Webhook & Mobile Lead Ingestion API
+        if (
+          url === "/api/voice/webhook" ||
+          url === "/api/v1/voice/webhook" ||
+          url === "/v1/voice/webhook" ||
+          url === "/api/mobile/sync" ||
+          url === "/api/mobile/lead"
+        ) {
+          const syncFile = path.resolve(__dirname, "public/mobile-sync.json")
+
+          if (req.method === "POST") {
+            let body = ""
+            req.on("data", (chunk) => {
+              body += chunk
+            })
+            req.on("end", () => {
+              try {
+                const payload = JSON.parse(body || "{}")
+                let existing: any[] = []
+                try {
+                  if (fs.existsSync(syncFile)) {
+                    existing = JSON.parse(fs.readFileSync(syncFile, "utf8"))
+                  }
+                } catch {}
+
+                const syncItem = {
+                  id:
+                    payload.conversationId ||
+                    `SYNC-${Date.now().toString(36).toUpperCase()}`,
+                  receivedAt: new Date().toISOString(),
+                  payload,
+                }
+                existing.unshift(syncItem)
+                if (existing.length > 100) existing = existing.slice(0, 100)
+
+                const pubDir = path.resolve(__dirname, "public")
+                if (!fs.existsSync(pubDir))
+                  fs.mkdirSync(pubDir, { recursive: true })
+                fs.writeFileSync(
+                  syncFile,
+                  JSON.stringify(existing, null, 2),
+                  "utf8",
+                )
+
+                const generatedLeadId =
+                  payload.leadId ||
+                  `LD-MOB-${Date.now().toString(36).slice(-4).toUpperCase()}`
+
+                res.setHeader("Content-Type", "application/json")
+                res.end(
+                  JSON.stringify({
+                    status: "SUCCESS",
+                    success: true,
+                    message:
+                      "Lead automatically created in CRM from mobile conversation.",
+                    leadId: generatedLeadId,
+                    conversationId: payload.conversationId || syncItem.id,
+                  }),
+                )
+              } catch (e: any) {
+                res.statusCode = 400
+                res.setHeader("Content-Type", "application/json")
+                res.end(JSON.stringify({ error: e?.message || "Invalid JSON" }))
+              }
+            })
+            return
+          }
+
+          if (req.method === "GET") {
+            let data: any[] = []
+            try {
+              if (fs.existsSync(syncFile)) {
+                data = JSON.parse(fs.readFileSync(syncFile, "utf8"))
+              }
+            } catch {}
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify(data))
+            return
+          }
+        }
+
+        // 3. Health check
+        if (url === "/api/health" || url === "/health") {
+          res.setHeader("Content-Type", "application/json")
+          res.end(
+            JSON.stringify({
+              status: "UP",
+              service: "SunFlow 360 API",
+              time: new Date().toISOString(),
+            }),
+          )
+          return
+        }
+
+        next()
+      })
+    },
+  }
+}
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   Modal,
   Platform,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import { BiometricAuthService } from '@/services/biometricAuth';
 
 const { width } = Dimensions.get('window');
 
@@ -232,6 +234,37 @@ export default function DocumentsScreen() {
   const [selectedDoc, setSelectedDoc] = useState<CertifiedDoc | null>(null);
   const [copiedNote, setCopiedNote] = useState(false);
   const [activeComponentInspect, setActiveComponentInspect] = useState<string>('inverter');
+  const [vaultLocked, setVaultLocked] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enabled = await BiometricAuthService.isBiometricLoginEnabled();
+        if (enabled) {
+          setVaultLocked(true);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const handleUnlockVault = async () => {
+    setUnlocking(true);
+    try {
+      const res = await BiometricAuthService.authenticate('Unlock Certified Documents & Handover Vault');
+      if (res.success) {
+        setVaultLocked(false);
+      } else {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert('Biometric verification failed.');
+        } else {
+          Alert.alert('Verification Failed', res.error || 'Biometrics not recognized.');
+        }
+      }
+    } finally {
+      setUnlocking(false);
+    }
+  };
 
   const handleDownload = (doc: CertifiedDoc) => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -272,6 +305,79 @@ Official Digital Document Seal Verified.
     setCopiedNote(true);
     setTimeout(() => setCopiedNote(false), 2000);
   };
+
+  if (vaultLocked) {
+    return (
+      <LinearGradient
+        colors={['#0D2B20', '#133E2E', '#0B231A']}
+        style={[styles.gradient, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}
+      >
+        <StatusBar style="light" />
+        <View
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            borderWidth: 2,
+            borderColor: '#10B981',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <Text style={{ fontSize: 36 }}>🔐</Text>
+        </View>
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: '800',
+            color: '#FFFFFF',
+            marginBottom: 8,
+            textAlign: 'center',
+          }}
+        >
+          Document Vault Locked
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'rgba(255, 255, 255, 0.75)',
+            textAlign: 'center',
+            marginBottom: 30,
+            lineHeight: 20,
+            maxWidth: 300,
+          }}
+        >
+          This vault contains certified installation handovers, DISCOM approvals, and 25-year warranty cards. Protected by Biometric Lock.
+        </Text>
+        <Pressable
+          onPress={handleUnlockVault}
+          style={{
+            width: '100%',
+            maxWidth: 280,
+            backgroundColor: '#10B981',
+            paddingVertical: 14,
+            borderRadius: 16,
+            alignItems: 'center',
+            shadowColor: '#10B981',
+            shadowOpacity: 0.35,
+            shadowRadius: 10,
+            elevation: 4,
+          }}
+        >
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>
+            {unlocking ? 'Verifying...' : '⚡ Unlock with Face ID / Biometrics'}
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => router.back()} style={{ marginTop: 20, padding: 10 }}>
+          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, fontWeight: '600' }}>
+            ← Return to Dashboard
+          </Text>
+        </Pressable>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient

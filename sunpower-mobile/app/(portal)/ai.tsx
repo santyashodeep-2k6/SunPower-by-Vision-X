@@ -10,11 +10,20 @@ import {
   Platform,
   ScrollView,
   TextInput,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ApiClient, ELEVENLABS_DEFAULT_AGENT_ID } from '@/services/apiClient';
+import { SafeStorage } from '@/services/storage';
+import {
+  syncMobileConversationToCRM,
+  liveUpdateConversation,
+  flushPendingSyncs,
+  type MobileConversationMessage,
+  type MobileAILeadPayload,
+} from '@/services/crmSync';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
@@ -75,6 +84,74 @@ export default function SolarAIAssistantScreen() {
   const [showTranscript, setShowTranscript] = useState(true);
   const [typedMessage, setTypedMessage] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
+
+  // CRM Sync State
+  const conversationIdRef = useRef<string>(`CONV-MOB-${Date.now().toString(36).toUpperCase()}`);
+  const [userProfile, setUserProfile] = useState<{ name: string; phone: string; email?: string; city?: string } | null>(null);
+  const [leadSubmitted, setLeadSubmitted] = useState<string | null>(null);
+  const [submittingLead, setSubmittingLead] = useState(false);
+
+  // Load user profile for CRM lead association
+  useEffect(() => {
+    (async () => {
+      try {
+        const profileRaw = await SafeStorage.getItem('user_profile');
+        const dataRaw = await SafeStorage.getItem('user_data');
+        if (profileRaw) {
+          const p = JSON.parse(profileRaw);
+          setUserProfile({
+            name: p.fullName || p.name || 'Mobile App User',
+            phone: p.phone || '9876543210',
+            email: p.email,
+            city: 'Pune',
+          });
+        } else if (dataRaw) {
+          const d = JSON.parse(dataRaw);
+          setUserProfile({
+            name: d.name || 'Mobile App User',
+            phone: d.phone || '9876543210',
+            city: 'Pune',
+          });
+        } else {
+          setUserProfile({
+            name: 'Mobile App Caller',
+            phone: '9876543210',
+            city: 'Pune',
+          });
+        }
+      } catch {
+        setUserProfile({ name: 'Mobile App Caller', phone: '9876543210', city: 'Pune' });
+      }
+
+      // Flush any pending offline syncs on screen load
+      flushPendingSyncs().catch(() => {});
+    })();
+  }, []);
+
+  // Live-sync messages to CRM every time they update (debounced)
+  const liveSyncTimerRef = useRef<any>(null);
+  useEffect(() => {
+    if (!callActive || messages.length < 2) return;
+    if (liveSyncTimerRef.current) clearTimeout(liveSyncTimerRef.current);
+
+    liveSyncTimerRef.current = setTimeout(() => {
+      const crmMessages: MobileConversationMessage[] = messages.map((m) => ({
+        role: m.role,
+        text: m.text,
+        time: m.time,
+      }));
+      liveUpdateConversation(
+        conversationIdRef.current,
+        crmMessages,
+        userProfile?.name || 'Mobile User',
+        activeLang.label,
+      );
+    }, 1500); // Debounce 1.5s to avoid hammering localStorage
+
+    return () => {
+      if (liveSyncTimerRef.current) clearTimeout(liveSyncTimerRef.current);
+    };
+  }, [messages, callActive]);
 
   // Animated bars heights
   const barHeights = useRef(
@@ -311,19 +388,115 @@ export default function SolarAIAssistantScreen() {
     }, 1500);
   };
 
-  const handleEndCall = () => {
+  const extractConsultationDetails = () => {
+    let bill = 3500;
+    let cap = 5.0;
+    let loc = userProfile?.city || 'Pune';
+
+    for (const m of messages) {
+      const t = m.text.toLowerCase();
+      const billMatch =
+        t.match(/(?:bill|₹|rs\.?)\s*(\d{3,6})/i) ||
+        t.match(/(\d{3,6})\s*(?:rs|rupees|per month|\/month)/i);
+      if (billMatch) bill = parseInt(billMatch[1], 10);
+
+      const capMatch = t.match(/(\d+(?:\.\d+)?)\s*(?:kw|kilo\s*watt)/i);
+      if (capMatch) cap = parseFloat(capMatch[1]);
+
+      if (t.includes('pune')) loc = 'Pune';
+      else if (t.includes('mumbai')) loc = 'Mumbai';
+      else if (t.includes('nagpur')) loc = 'Nagpur';
+      else if (t.includes('nashik')) loc = 'Nashik';
+    }
+
+    return { bill, cap, loc };
+  };
+
+  const handleGenerateLead = async () => {
+    setSubmittingLead(true);
+    const { bill, cap, loc } = extractConsultationDetails();
+
+    const crmMessages: MobileConversationMessage[] = messages.map((m) => ({
+      role: m.role,
+      text: m.text,
+      time: m.time,
+    }));
+
+    const payload: MobileAILeadPayload = {
+      customerName: userProfile?.name || 'Mobile App Caller',
+      customerPhone: userProfile?.phone || '9876543210',
+      customerEmail: userProfile?.email,
+      city: loc,
+      language: activeLang.label,
+      propertyType: 'Residential',
+      monthlyBill: bill,
+      capacity: cap,
+      systemType: 'On-Grid',
+      messages: crmMessages,
+      callDurationSeconds: seconds,
+      conversationId: conversationIdRef.current,
+    };
+
+    try {
+      const result = await syncMobileConversationToCRM(payload);
+      setSubmittingLead(false);
+      if (result.success && result.leadId) {
+        setLeadSubmitted(result.leadId);
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert(
+            `🎉 Lead Created: ${result.leadId}!\nCustomer consultation details and ${cap} kW enquiry synced directly to the Sales CRM.`,
+          );
+        } else {
+          Alert.alert(
+            'Site Survey Booked! 🎉',
+            `Lead ${result.leadId} created in CRM. Our technical advisor will contact you.`,
+          );
+        }
+      }
+    } catch (e: any) {
+      setSubmittingLead(false);
+      console.error('Lead generation failed:', e);
+    }
+  };
+
+  const handleEndCall = async () => {
     disconnectElevenLabs();
     setCallActive(false);
 
-    // Save lead to CRM backend webhook
-    ApiClient.postVoiceWebhook({
-      customerName: 'Mobile App Caller',
-      customerPhone: '9876543210',
-      city: 'Pune',
-      capacityKw: 5.0,
-      summary: `Customer had a ${formatTime(seconds)} consultation in ${activeLang.label} with ElevenLabs AI receptionist.`,
-      conversationId: `conv_${Date.now()}`,
-    }).catch(() => {});
+    const { bill, cap, loc } = extractConsultationDetails();
+
+    const crmMessages: MobileConversationMessage[] = messages.map((m) => ({
+      role: m.role,
+      text: m.text,
+      time: m.time,
+    }));
+
+    const payload: MobileAILeadPayload = {
+      customerName: userProfile?.name || 'Mobile App Caller',
+      customerPhone: userProfile?.phone || '9876543210',
+      customerEmail: userProfile?.email,
+      city: loc,
+      language: activeLang.label,
+      propertyType: 'Residential',
+      monthlyBill: bill,
+      capacity: cap,
+      systemType: 'On-Grid',
+      messages: crmMessages,
+      callDurationSeconds: seconds,
+      conversationId: conversationIdRef.current,
+    };
+
+    // Sync to main CRM database (localStorage + REST fallback)
+    try {
+      const result = await syncMobileConversationToCRM(payload);
+      if (result.success) {
+        console.log(`✅ Lead ${result.leadId} synced to CRM`);
+      } else {
+        console.warn('⚠️ CRM sync queued for later:', result.error);
+      }
+    } catch (e: any) {
+      console.error('CRM sync error:', e?.message);
+    }
 
     router.back();
   };
@@ -482,6 +655,29 @@ export default function SolarAIAssistantScreen() {
           </Pressable>
         </View>
       )}
+
+      {/* Live Sales CRM Sync & Book Survey Action */}
+      <View style={styles.leadSyncCard}>
+        <View style={styles.leadSyncLeft}>
+          <Text style={styles.leadSyncTitle}>
+            {leadSubmitted ? `✓ Lead: ${leadSubmitted}` : '⚡ Live Sales CRM Sync'}
+          </Text>
+          <Text style={styles.leadSyncSub}>
+            {leadSubmitted
+              ? 'Synced to Sales & Leads CRM'
+              : 'AI consultation updates main CRM live'}
+          </Text>
+        </View>
+        <Pressable
+          style={[styles.bookSurveyBtn, leadSubmitted ? styles.bookSurveyBtnDone : null]}
+          onPress={handleGenerateLead}
+          disabled={submittingLead}
+        >
+          <Text style={styles.bookSurveyBtnText}>
+            {submittingLead ? 'Syncing…' : leadSubmitted ? '✓ Synced' : '📋 Book Survey'}
+          </Text>
+        </Pressable>
+      </View>
 
       {/* Bottom Action Controls matching Screenshot */}
       <View style={styles.controlsRow}>
@@ -765,5 +961,45 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
+  },
+  leadSyncCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    marginVertical: 8,
+  },
+  leadSyncLeft: {
+    flex: 1,
+    marginRight: 10,
+  },
+  leadSyncTitle: {
+    color: '#34D399',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  leadSyncSub: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  bookSurveyBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  bookSurveyBtnDone: {
+    backgroundColor: '#10B981',
+  },
+  bookSurveyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

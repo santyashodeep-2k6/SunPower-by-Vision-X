@@ -137,6 +137,7 @@ export default function TechnicianScreen() {
           };
           const nextPhotos = [newPhoto, ...currentJob.photos];
           persistJobPhotos(currentJob.id, nextPhotos);
+          mirrorPhotoToCRMDb(currentJob, newPhoto);
           const updated = jobs.map((j) => {
             if (j.id === currentJob.id) {
               return { ...j, photos: nextPhotos };
@@ -145,10 +146,34 @@ export default function TechnicianScreen() {
           });
           setJobs(updated);
           setShowPhotoModal(false);
-          notify('Camera Evidence Saved', `${photoCategory} stored in local app storage (SafeStorage) & ready for DISCOM sync.`);
+          notify('Camera Evidence Saved', `${photoCategory} stored in local app storage (SafeStorage) & synced to CRM.`);
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const mirrorPhotoToCRMDb = (job: any, photo: any) => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem('sunflow360.demo-db');
+        if (raw) {
+          const db = JSON.parse(raw);
+          const inst = db.installations?.find(
+            (i: any) => i.id === job.id || i.reference === job.reference || i.customerId === job.customerId
+          );
+          if (inst) {
+            if (!inst.photos) inst.photos = [];
+            inst.photos.unshift({
+              id: photo.id,
+              url: photo.url,
+              caption: `${photo.title} (GPS: ${photo.gps})`,
+              at: new Date().toISOString(),
+            });
+            window.localStorage.setItem('sunflow360.demo-db', JSON.stringify(db));
+          }
+        }
+      } catch {}
     }
   };
 
@@ -173,6 +198,7 @@ export default function TechnicianScreen() {
 
     const nextPhotos = [newPhoto, ...currentJob.photos];
     persistJobPhotos(currentJob.id, nextPhotos);
+    mirrorPhotoToCRMDb(currentJob, newPhoto);
     const updated = jobs.map((j) => {
       if (j.id === currentJob.id) {
         return { ...j, photos: nextPhotos };
@@ -183,7 +209,7 @@ export default function TechnicianScreen() {
     setShowPhotoModal(false);
     notify(
       'Camera Evidence Captured & Stored 💾',
-      `${category} saved to local app storage (SafeStorage) with GPS watermark: 18.5204° N, 73.8567° E`
+      `${category} saved to local app storage (SafeStorage: technician_photos_${currentJob.id}) & synced to CRM with GPS stamp.`
     );
   };
 

@@ -260,14 +260,37 @@ export default function ServiceScreen() {
   };
 
   const handleDialHelpline = () => {
-    Linking.openURL('tel:180078676937');
+    const telUrl = 'tel:180078676937';
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        window.open(telUrl, '_self');
+      } catch {
+        notifyUser('Emergency Helpline', 'Toll-Free Helpline: 1800-786-76937 (1800-SUN-POWER)');
+      }
+    } else {
+      Linking.openURL(telUrl).catch(() => {
+        Alert.alert('Emergency Helpline', 'Toll-Free Helpline: 1800-786-76937 (1800-SUN-POWER)');
+      });
+    }
   };
 
   const handleWhatsAppSupport = () => {
-    Linking.openURL('https://wa.me/919822012345?text=Hello%20SunPower%2024x7%20Emergency%20Grid%20Desk');
+    const url = 'https://wa.me/919822012345?text=Hello%20SunPower%2024x7%20Emergency%20Grid%20Desk';
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url).catch(() => {
+        Alert.alert('WhatsApp Emergency Desk', 'Message +91 98220 12345 for 24/7 technical dispatch.');
+      });
+    }
   };
 
   const handleCopyHelpline = () => {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        navigator.clipboard.writeText('180078676937');
+      } catch {}
+    }
     setCopiedNotification(true);
     setTimeout(() => setCopiedNotification(false), 3000);
   };
