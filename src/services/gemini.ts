@@ -124,8 +124,8 @@ export async function callGeminiChat(
     },
   }
 
-  // Try gemini-2.0-flash, fallback to gemini-1.5-flash
-  const models = ["gemini-2.0-flash", "gemini-1.5-flash"]
+  // Try gemini-2.5-flash, fallback to gemini-3.8-flash
+  const models = ["gemini-2.5-flash", "gemini-3.8-flash"]
   let lastError: any = null
 
   for (const model of models) {

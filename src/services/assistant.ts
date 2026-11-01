@@ -332,10 +332,10 @@ Would you like to calculate your net cost after subsidy?`,
     },
   },
 
-  // 2. Pricing & Cost
+  // 2. Pricing & Cost & Packages
   {
     matcher: (t) =>
-      /cost|price|rate|quotation|how much|charges|expensive|खर्च|किंमत|ధర|ఖర్చు/i.test(
+      /cost|price|rate|quotation|how much|charges|expensive|plan|plans|package|packages|option|options|खर्च|किंमत|ధర|ఖర్చు/i.test(
         t,
       ),
     response: {
@@ -1013,6 +1013,10 @@ const backend: AssistantService = {
   engine: "backend",
   greet: smartAI.greet,
   reply: async (conversation, slot, text) => {
+    // If Gemini API is configured, prioritize Gemini with full RAG database context
+    if (hasGeminiApiKey()) {
+      return smartAI.reply(conversation, slot, text)
+    }
     try {
       return await apiRequest<AssistantTurn>("POST", "/assistant/reply", {
         conversationId: conversation.id,
