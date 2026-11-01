@@ -1,10 +1,12 @@
 # SunPower 360 — Vision X
 
-**An end-to-end rooftop solar operations platform, designed to connect the customer journey with the operational lifecycle of every installation and the equipment behind it.**
+**An end-to-end rooftop solar operations platform that connects the customer journey with the operational lifecycle of every installation and the equipment behind it.**
 
-SunPower 360 is a multi-interface solar business management project built for the operational challenges of a growing rooftop solar installer. It brings together customer enquiries, lead management, site surveys, quotations and bills of materials, orders and payments, inventory and dispatch, installation workflows, asset records, warranty checks, after-sales service and director-level visibility.
+SunPower 360 is a multi-interface solar business management platform built for the operational challenges of a growing rooftop solar installer. It connects customer enquiries, lead management, site surveys, quotations and bills of materials, orders and payments, inventory and dispatch, installation workflows, asset records, warranty checks, after-sales service and director-level visibility.
 
-> **Our design principle:** A solar installation is not a one-day transaction. It creates a long-lived relationship between a customer, a site, an order, installed equipment and future service obligations. SunPower 360 is organized around keeping that relationship traceable.
+The platform includes a **dedicated customer mobile application** alongside its web-based business operations system and technician-oriented mobile workflows. Customers can access solar-related services through a simpler smartphone experience, while internal teams manage the complete operational lifecycle through connected interfaces.
+
+> **Our design principle:** A solar installation is not a one-day transaction. It creates a long-lived relationship between a customer, a site, an order, installed equipment and future service obligations. SunPower 360 is organized around keeping that relationship traceable while making the experience convenient for customers and operational teams.
 
 **Team:** Vision X  
 **Repository:** [santyashodeep-2k6/SunPower-by-Vision-X](https://github.com/santyashodeep-2k6/SunPower-by-Vision-X)
@@ -43,22 +45,32 @@ When these activities are spread across WhatsApp conversations, phone calls, spr
 - The warehouse may not know the exact kit required for an order.
 - A dispatched inverter or battery can become difficult to trace if its serial number is not tied to the installation.
 - A technician's work evidence can remain on a personal phone instead of in the project record.
+- Customers may need to contact the company repeatedly to ask about installation progress or retrieve important information.
 - A later service request can require staff to reconstruct the original installation history.
 - Management can see sales totals without understanding work-in-progress, service backlog or the assumptions behind margins.
 
-The supplied problem statement describes a company completing approximately 40 rooftop projects per month, with a 15-person technician team, high-value inventory and long-term warranty obligations. The central challenge is therefore broader than building a CRM or an inventory screen: it is to connect the full operating lifecycle of the solar business.
+The supplied problem statement describes a company completing approximately 40 rooftop projects per month, with a 15-person technician team, high-value inventory and long-term warranty obligations. The central challenge is therefore broader than building a CRM or an inventory screen: it is to connect the full operating lifecycle of the solar business while providing customers with a convenient way to access their solar journey.
 
 ## 2. Our solution
 
-**SunPower 360 is designed as a shared operational platform with role-oriented interfaces.** Customers, sales executives, surveyors, inventory staff, technicians, service personnel and administrators interact with the parts of the system relevant to their work.
+**SunPower 360 is a shared operational platform with role-oriented web and mobile experiences.** Customers, sales executives, surveyors, inventory staff, technicians, service personnel and administrators interact with the parts of the system relevant to their work.
+
+### A customer-first mobile experience
+
+A key part of SunPower 360 is its **dedicated customer mobile application**, developed using React Native and Expo. We recognize that customers should not need to navigate a complex business management dashboard to access their own solar-related information.
+
+The customer-facing mobile experience is designed to make relevant services accessible from a smartphone. It provides a simpler entry point for customer-related information, installation visibility, solar calculations, subsidy information and digital documents. This complements the internal web platform rather than exposing customers to operational tools intended for company staff.
+
+The mobile project also contains a **separate technician experience** for field-oriented work such as assigned jobs, checklists, progress and site evidence. Customer and technician workflows serve different users and should be understood as distinct experiences within the mobile application.
 
 | User | Primary workflow | Intended outcome |
 |---|---|---|
-| Customer | Enquiry, solar information, installation/service access | A clear route from interest to support |
-| Sales | Customer/site records, lead qualification, follow-up, quotation | A traceable sales pipeline |
+| Customer — Mobile App | Customer portal, available installation information, solar calculator, subsidy information and documents | A convenient, customer-oriented smartphone experience |
+| Customer — Web | Enquiry, solar information and installation/service access | A clear route from interest to support |
+| Sales | Customer/site records, lead qualification, follow-up and quotation | A traceable sales pipeline |
 | Surveyor | Technical site assessment and feasibility status | A technical checkpoint before final proposal |
 | Inventory / dispatch | Product stock, BOM requirements, dispatch and serialized equipment | Better material readiness and asset traceability |
-| Technician | Assigned work, checklist, progress and site evidence | Structured field execution |
+| Technician — Mobile App | Assigned work, checklist, progress and site evidence | Structured field execution |
 | Service team | Warranty lookup, ticket handling and repair workflow | Accountable after-sales support |
 | Director / administrator | Operational indicators, users and settings | A consolidated view of business activity |
 
@@ -72,13 +84,14 @@ The following matrix maps the scenarios in the problem statement to the implemen
 |---|---|---|
 | Capture enquiries from web and other channels | Public enquiry flow, lead capture, customer/site association, duplicate lookup and lead pipeline | `src/pages/public/EnquiryPage.tsx`, `src/services/crm.ts`, backend `lead` and `customer` packages |
 | Qualify customers before arranging a survey | Structured customer/property/bill/roof/capacity/system details and preliminary solar estimate | `src/services/assistant.ts`, `src/services/gemini.ts`, `src/lib/catalog.ts` |
-| Record roof and electrical feasibility | Survey records, assessment fields, feasibility states, status and approval endpoints | backend `survey` package; `src/pages/app/crm/SurveysPage.tsx` and survey detail page |
+| Record roof and electrical feasibility | Survey records, assessment fields, feasibility states, status and approval endpoints | Backend `survey` package; `src/pages/app/crm/SurveysPage.tsx` and survey detail page |
 | Generate a quote with the required components | Product catalogue, quotation items, capacity-driven BOM calculation and amount calculation | `src/lib/catalog.ts`; backend `quotation` package and `BOMCalculationEngine.java` |
 | Record advance and full payments | Payments associated with sales orders and balance validation in the web domain service | `src/services/operations.ts`; backend `order` package |
-| Prepare and dispatch the correct kit | Inventory and dispatch domain; BOM-wide availability/reservation logic in the web domain service | backend `inventory` package; `src/services/operations.ts`; dispatch pages |
-| Trace each serialized inverter, battery or other unit | Dispatch item serial numbers and warranty records associated with serialized equipment | backend `inventory`, `dispatch` and `warranty` packages |
+| Prepare and dispatch the correct kit | Inventory and dispatch domain; BOM-wide availability/reservation logic in the web domain service | Backend `inventory` package; `src/services/operations.ts`; dispatch pages |
+| Trace each serialized inverter, battery or other unit | Dispatch item serial numbers and warranty records associated with serialized equipment | Backend `inventory`, `dispatch` and `warranty` packages |
 | Start warranty coverage from dispatch | Warranty automation can create category-based warranty records from dispatched serialized items | `WarrantyAutomationService.java` |
 | Capture field execution | Technician-oriented experience, work checklist, progress and photo/evidence interactions | `sunpower-mobile/app/technician.tsx`; web installation/technician pages |
+| Give customers a mobile access point | Dedicated customer-facing mobile portal and customer-oriented screens | `sunpower-mobile/app/(portal)/`, `sunpower-mobile/app/(auth)/`, mobile calculator and documents screens |
 | Record customer handover | Digital signature component and installation completion endpoint; Solar Asset Passport and QR view | `SignatureCapture.tsx`; backend `InstallationController`; `SolarAssetPassport.tsx` |
 | Resolve later service issues | Serial-based warranty verification and service-ticket domain workflows | `src/services/aftersales.ts`; backend `warranty` and `service` packages |
 | Give management operational visibility | Director metrics for revenue, modeled costs, pending surveys/installations, active orders and open tickets | `ProfitabilityAnalyticsEngine.java`; director dashboard controller/page |
@@ -115,6 +128,9 @@ Installation job + checklist + site evidence + handover
       |
       v
 Asset record + warranty
+      |
+      v
+Customer mobile access to available project information
       |
       v
 Service ticket + diagnosis + repair / replacement
@@ -157,11 +173,17 @@ The backend `WarrantyAutomationService` can create warranty records from seriali
 
 The project includes installation jobs, technician-oriented screens, checklists, progress/evidence interactions and a signature-capture component. The backend installation completion endpoint accepts a customer signature value. The web application also includes a Solar Asset Passport component that can display installation-related customer, site, order, serialized unit, warranty and service information, along with a QR code and document views.
 
-### 4.8 After-sales service
+### 4.8 Customer mobile experience
+
+The dedicated customer mobile experience gives customers a simpler way to access relevant solar services from their smartphones. The mobile project includes customer portal and authentication routes, a solar calculator, subsidy information and a documents screen. The exact information available to a customer depends on the configured runtime, authenticated account and successful backend synchronization.
+
+This customer journey is separate from the technician workflow. Customers use the mobile experience to access their solar-related information; technicians use their dedicated interface for assigned field work and installation activities.
+
+### 4.9 After-sales service
 
 The after-sales service layer includes serial-based warranty verification and service-ticket logic. In the web domain service, ticket creation validates the customer/installation relationship and checks that a supplied serial belongs to an installed unit at the selected installation. The service logic includes assignment, diagnosis, covered versus chargeable repair paths, customer estimate approval and ticket history. The backend service module exposes its own ticket API; not every web-domain service action currently has a corresponding backend controller endpoint.
 
-### 4.9 Director visibility
+### 4.10 Director visibility
 
 The backend analytics service aggregates sales orders, surveys, installation jobs and service tickets to return director dashboard indicators. It calculates revenue and a modeled gross-profit estimate, and includes operational counts such as pending surveys, pending installations, active orders and open service tickets. The current cost assumptions are documented in [Current implementation boundaries](#14-current-implementation-boundaries).
 
@@ -210,13 +232,28 @@ The backend analytics service aggregates sales orders, surveys, installation job
 - Serial-number fields on dispatch records and scan/validation endpoints.
 - Full-BOM stock validation and shortage/procurement logic in the web domain service.
 
+### Customer mobile application
+
+SunPower 360 includes a dedicated customer-facing mobile application built with **React Native, Expo and TypeScript**. It is designed to make solar-related services easier to access without requiring customers to use the company's internal operations dashboard.
+
+Customer-oriented mobile areas include:
+
+- **Customer portal:** a dedicated mobile entry point for customer-related information.
+- **Customer access flows:** authentication and portal navigation for the mobile experience.
+- **Solar calculator:** a convenient way to explore estimated solar system requirements and potential benefits.
+- **Subsidy information:** a mobile-accessible section for solar subsidy-related information.
+- **Digital documents:** a dedicated screen for accessing available customer and installation-related documents.
+- **Mobile-first interface:** a smartphone-oriented experience that keeps customer-facing actions separate from internal business workflows.
+
+The customer application complements the web operations platform. It is intended to improve accessibility and customer convenience, while the web application remains the primary workspace for internal business operations.
+
 ### Installation and field operations
 
 - Installation job model and backend endpoints.
 - Web installation, dispatch and technician operations pages.
 - Expo/React Native technician interface.
 - Job checklist, progress, timer and photo/evidence interactions.
-- Customer installation tracking views in the mobile app.
+- Customer installation tracking views in the mobile app, subject to the configured data path and synchronization state.
 
 ### Asset passport and documents
 
@@ -243,44 +280,54 @@ The backend analytics service aggregates sales orders, surveys, installation job
 
 ## 6. Architecture
 
-SunPower 360 contains three application surfaces: the React web application, a Spring Boot API and an Expo/React Native mobile application.
+SunPower 360 contains three connected application surfaces: the React web application, a Spring Boot API and an Expo/React Native mobile application. The mobile application provides distinct customer and technician experiences.
 
 ```text
                          SUNPOWER 360
                               |
-              +---------------+---------------+
-              |               |               |
-          Public Web      Operations Web    Mobile App
-         React + TS        React + TS       Expo / RN
-              |               |               |
-              +---------------+---------------+
+              +---------------+----------------+
+              |               |                |
+           PUBLIC /        CUSTOMER &        OPERATIONS
+        OPERATIONS WEB    TECHNICIAN MOBILE      API
+          React + TS      Expo / React Native Spring Boot
+              |               |                |
+              +---------------+----------------+
                               |
-                    HTTP / REST API boundary
+                     HTTP / REST API boundary
                               |
+                         Java 21
                      Spring Boot 3.3.5
-                           Java 21
                               |
-     +----------+-------------+-------------+----------+
-     |          |             |             |          |
-    CRM       Survey       Quotation       Orders    Inventory
-     |          |             |             |          |
-     +----------+-------------+-------------+----------+
+       +----------+-----------+-----------+----------+
+       |          |           |           |          |
+      CRM       Survey    Quotation     Orders   Inventory
+       |          |           |           |          |
+       +----------+-----------+-----------+----------+
                               |
-           Installation / Warranty / Service
+              Installation / Warranty / Service
                               |
-                 Analytics / Voice integration
+                   Analytics / Voice integration
                               |
-                    Spring Data JPA
+                       Spring Data JPA
                               |
-                         PostgreSQL
+                          PostgreSQL
                               |
                            Flyway
-                     schema migrations
+                      schema migrations
 
 External integrations in the codebase:
 - Google Gemini API (optional web assistant path)
 - ElevenLabs Conversational AI (voice interface)
 ```
+
+### Application surfaces
+
+| Application surface | Main audience | Main responsibilities |
+|---|---|---|
+| React web application | Public visitors and internal business teams | Public enquiry, CRM, surveys, quotations, orders, inventory, dispatch, installation operations, after-sales and director dashboard |
+| Customer mobile experience | Solar customers | Customer portal, available installation information, calculator, subsidy information and documents |
+| Technician mobile experience | Field technicians | Assigned work, checklists, progress and site evidence |
+| Spring Boot API | Web and mobile clients | Authentication, business rules, REST APIs and persistence |
 
 ### Backend module boundaries
 
@@ -369,17 +416,17 @@ SunPower-by-Vision-X/
 │   │   └── public/                    # Public site, enquiry, assistant
 │   └── services/                      # API client and domain services
 │
-├── sunpower-mobile/                  # Expo / React Native application
+├── sunpower-mobile/                  # Customer + technician mobile application
 │   ├── app/
-│   │   ├── (auth)/
-│   │   ├── (portal)/
-│   │   ├── technician.tsx
-│   │   ├── calculator.tsx
-│   │   ├── documents.tsx
-│   │   └── subsidy.tsx
-│   ├── components/
-│   ├── services/
-│   └── theme/
+│   │   ├── (auth)/                    # Mobile authentication screens
+│   │   ├── (portal)/                  # Customer-facing portal routes
+│   │   ├── technician.tsx             # Technician workflow
+│   │   ├── calculator.tsx             # Solar calculator
+│   │   ├── documents.tsx              # Digital documents
+│   │   └── subsidy.tsx                # Solar subsidy information
+│   ├── components/                    # Reusable mobile UI components
+│   ├── services/                      # API and application services
+│   └── theme/                         # Mobile design system
 │
 ├── .env.example
 └── .gitignore
@@ -475,9 +522,9 @@ Restart Vite after changing environment variables.
 
 If `VITE_SUNFLOW_API_URL` is omitted, the web service layer uses its browser-local demo store. Demo data persists in localStorage; it is not PostgreSQL persistence.
 
-### 9.5 Start the mobile application
+### 9.5 Start the customer and technician mobile application
 
-In a separate terminal:
+The Expo application contains customer-facing and technician-oriented experiences. Start it in a separate terminal:
 
 ```bash
 cd sunpower-mobile
@@ -485,15 +532,23 @@ npm install
 npm start
 ```
 
-Use the Expo terminal prompts to run the app on a supported target. The mobile API client defaults to `http://10.0.2.2:8081/api` for the Android emulator and `http://localhost:8081/api` on other platforms. Override it with `EXPO_PUBLIC_API_URL` when needed.
+Use the Expo terminal prompts to run the app on a supported target.
 
-For a physical phone, `localhost` refers to the phone itself. Use the development computer's reachable LAN IP address or a deployed backend URL, for example:
+**Android emulator:**
 
 ```env
-EXPO_PUBLIC_API_URL=http://192.168.1.10:8081/api
+EXPO_PUBLIC_API_URL=http://10.0.2.2:8081/api
 ```
 
-Replace the example IP with the address of the computer running the backend.
+**Physical Android device:**
+
+```env
+EXPO_PUBLIC_API_URL=http://YOUR_COMPUTER_LAN_IP:8081/api
+```
+
+Replace `YOUR_COMPUTER_LAN_IP` with the address of the computer running the backend that is reachable from the phone. On a physical phone, `localhost` refers to the phone itself, not the development computer.
+
+The customer experience is intended to provide convenient access to customer-facing solar services. The technician experience provides a separate workflow for installation execution and field activities. Verify the relevant API configuration and synchronization behavior on the target device before a live demonstration.
 
 ## 10. Configuration and integrations
 
@@ -519,13 +574,13 @@ The web voice interface uses the ElevenLabs React SDK for the conversational voi
 
 ### Mobile API URL
 
-Set `EXPO_PUBLIC_API_URL` to the API base URL reachable from the target device. Emulator networking differs from physical-device networking; use the appropriate reachable address.
+Set `EXPO_PUBLIC_API_URL` to the API base URL reachable from the target device. Emulator networking differs from physical-device networking; use the appropriate reachable address. The mobile app's local/demo behavior and its API-connected behavior should be tested separately.
 
 ## 11. Demo walkthrough
 
 For a coherent review, follow one customer journey instead of navigating unrelated screens. The seed builder defines a guided demo-customer profile in `src/data/seed.ts` (Rahul Sharma, residential property in Pune, a ₹3,200 monthly bill and a requested 3 kW on-grid system). The source labels this profile as a guided demo customer definition; it is not guaranteed to exist in every runtime mode until the appropriate demo flow creates or loads it.
 
-Suggested reviewer journey:
+### Suggested end-to-end business demonstration
 
 1. **Customer enquiry:** submit an enquiry with contact, site, bill and system requirements.
 2. **CRM:** open the lead and inspect the customer/site relationship, source and status.
@@ -538,6 +593,19 @@ Suggested reviewer journey:
 9. **Asset Passport:** open an installation passport, QR code and document views.
 10. **After-sales:** verify a known serial number and inspect or create a service ticket.
 11. **Director view:** finish with pending work, open service cases and financial indicators.
+
+### Customer mobile app demonstration
+
+Show how SunPower 360 extends beyond the company's internal operations and provides a convenient experience directly to customers.
+
+1. Open the SunPower 360 customer mobile application.
+2. Demonstrate the customer authentication and portal experience.
+3. Show the customer-facing installation or project information available in the app.
+4. Open the solar calculator and demonstrate how a customer can explore system requirements and estimated benefits.
+5. Show the subsidy information section.
+6. Open the documents section and demonstrate access to available customer or installation-related documents.
+
+**Key message for reviewers:** Customers do not need to navigate the company's internal CRM or operations dashboard. They have a dedicated, simplified mobile interface for accessing relevant solar services. The operations team manages the business lifecycle through the web platform, while customers and field technicians access their respective workflows through mobile interfaces.
 
 For a live demonstration, prepare and verify the required customer, order, installation and serial-number records beforehand. Do not assume that a record created in a browser-local demo store automatically appears in PostgreSQL or on a separate mobile runtime. Verify the exact runtime and data path you will present.
 
@@ -603,7 +671,7 @@ We prefer an accurate description of what the code does today over overstating p
 3. **Gemini key exposure.** A `VITE_GEMINI_API_KEY` is compiled into client-side application code. This is acceptable only for a controlled prototype key with appropriate restrictions; production model calls should be proxied through a backend service with server-side secret management.
 4. **Voice backend token/webhook hardening.** The current voice token controller returns a generated session-like identifier and agent ID; it should not be represented as a verified provider-issued ephemeral credential without completing the actual provider token exchange. The webhook handler accepts an optional signature header; signature verification and replay protection should be added before production use.
 5. **API parity is not complete for every web domain action.** Some web service functions call endpoints for stock reservation/procurement and detailed service-ticket assignment/diagnosis/estimate decisions, while the current backend controllers expose a narrower set of operations for those modules. Test each action in API mode and align controller/service contracts before claiming complete end-to-end backend persistence.
-6. **Mobile local and remote state differ.** The mobile app contains local storage and fallback/demo behavior. Its job, checklist and photo interactions should be tested for the target platform to distinguish locally stored changes from data successfully synchronized to the backend.
+6. **Mobile local and remote state differ.** The mobile app contains customer and technician experiences, local storage and fallback/demo behavior. Its job, checklist, customer portal and other interactions should be tested for the target platform to distinguish locally stored changes from data successfully synchronized with the backend. Verify customer account access, installation information and document retrieval against the configured API before describing each as fully synchronized.
 7. **Director cost model is indicative.** `ProfitabilityAnalyticsEngine` currently estimates hardware cost as 68% of revenue and labour cost as 12% of revenue. These are fixed modeled assumptions, not actual job-level accounting derived from purchase invoices, BOM consumption and technician timesheets.
 8. **Warranty terms are category-based defaults.** The backend automation service documents 25 years for modules, 5 years for inverters and 1 year for BOS/structure. Actual coverage must follow the selected manufacturer's terms, product SKU and customer contract.
 9. **Subsidy and tax values are implemented assumptions.** Validate government subsidy eligibility, scheme rules, GST treatment and pricing against current official rules and commercial agreements before using the calculations in a real quotation.
@@ -619,6 +687,7 @@ The next engineering steps are focused on making the complete lifecycle more con
 - Complete provider-issued ElevenLabs session credential exchange; verify webhook signatures and prevent replayed events.
 - Align every web service endpoint with a backend controller/service contract, especially inventory reservation, procurement and full service-ticket state transitions.
 - Define a robust mobile synchronization contract with retry handling, idempotency and conflict resolution.
+- Complete and verify customer-to-installation data access across mobile and backend, including secure account-level authorization.
 - Replace fixed director cost assumptions with a job-cost ledger using actual procurement cost, consumed BOM quantities, labour/time entries, travel and after-sales cost.
 - Add immutable audit events for dispatch, serial assignment, installation completion, signature capture and warranty changes.
 - Add end-to-end tests for enquiry-to-service workflows against PostgreSQL.
@@ -634,6 +703,8 @@ A solar installer does not operate through isolated screens. It operates through
 
 **Enquiry → Qualification → Survey → Quotation/BOM → Order/Payment → Inventory/Dispatch → Installation → Asset Passport/Warranty → Service → Management visibility.**
 
-SunPower 360 is organized around that chain. Its central value is the continuity of customer, site, order and equipment information across teams and over the long life of a solar installation.
+Customers should not have to understand that internal chain to access the services they need. The dedicated customer mobile application provides a simpler customer-facing entry point, while the web platform coordinates the business processes and the technician experience supports field execution.
 
-**Vision X — connecting every stage of the solar business lifecycle.**
+SunPower 360 is organized around that connected ecosystem. Its central value is the continuity of customer, site, order and equipment information across teams and over the long life of a solar installation.
+
+**Vision X — One connected platform. Better solar operations. A simpler customer experience.**
