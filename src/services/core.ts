@@ -81,6 +81,19 @@ export const COLLECTION_ENDPOINTS: Partial<Record<keyof DemoDB, string>> = {
   notifications: "/notifications",
 }
 
+function normalizeSurveyStatus(s: any): string {
+  if (!s) return 'Scheduled'
+  const clean = String(s).trim().toUpperCase().replace(/[-_ ]+/g, '')
+  if (clean === 'SCHEDULED') return 'Scheduled'
+  if (clean === 'APPROVED') return 'Approved'
+  if (clean === 'REJECTED') return 'Rejected'
+  if (clean === 'RESCHEDULED' || clean.includes('REVISIT')) return 'Revisit Requested'
+  if (clean === 'COMPLETED' || clean.includes('PENDING')) return 'Pending Approval'
+  if (clean.includes('APPROV')) return 'Approved'
+  if (clean.includes('REJECT')) return 'Rejected'
+  return 'Scheduled'
+}
+
 function normalizeLeadStatus(s: any): string {
   if (!s) return "New"
   const clean = String(s).trim().toUpperCase().replace(/[-_ ]+/g, "")
@@ -181,10 +194,10 @@ export function normalizeDb(data: DemoDB): DemoDB {
     }
   }
   next.sites = Array.from(siteMap.values())
-
   // Normalize surveys
   next.surveys = (next.surveys || []).map((s: any) => ({
     ...s,
+    status: normalizeSurveyStatus(s.status),
     photos: Array.isArray(s.photos) ? s.photos : [],
     notes: Array.isArray(s.notes) ? s.notes : [],
   }))
